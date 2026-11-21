@@ -1,0 +1,8 @@
+/target
+/driver/build
+/tools/roundtrip
+/tools/sysex
+/tools/rec
+/tools/tone
+driver/recordings/
+.DS_Store

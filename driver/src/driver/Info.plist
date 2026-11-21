@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleExecutable</key>
+	<string>UR44</string>
+	<key>CFBundleIdentifier</key>
+	<string>local.ur44.driver</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>UR44</string>
+	<key>CFBundlePackageType</key>
+	<string>BNDL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>@VERSION@</string>
+	<key>CFBundleVersion</key>
+	<string>@VERSION@</string>
+	<key>CFBundleSupportedPlatforms</key>
+	<array>
+		<string>MacOSX</string>
+	</array>
+	<key>LSMinimumSystemVersion</key>
+	<string>12.0</string>
+	<key>CFPlugInFactories</key>
+	<dict>
+		<key>58BD5D18-A64E-41ED-919F-F9389B44D701</key>
+		<string>UR44_Create</string>
+	</dict>
+	<key>CFPlugInTypes</key>
+	<dict>
+		<key>443ABAB8-E7B3-491A-B985-BEB9187030DB</key>
+		<array>
+			<string>58BD5D18-A64E-41ED-919F-F9389B44D701</string>
+		</array>
+	</dict>
+	<key>AudioServerPlugIn_IOKitUserClients</key>
+	<array>
+		<string>AppleUSBHostDeviceUserClient</string>
+		<string>AppleUSBHostInterfaceUserClient</string>
+	</array>
+</dict>
+</plist>
