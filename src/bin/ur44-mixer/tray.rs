@@ -1,9 +1,9 @@
-//! Menu bar icon + menu, and the control channel used by the launcher ("show the window").
+//! Menu bar (macOS) / notification area (Windows) icon + menu, and the control channel used by
+//! the launcher ("show the window").
 
 use iced::futures::{SinkExt, Stream, channel::mpsc, executor::block_on};
-use std::io::{BufRead, BufReader};
-use std::os::unix::net::UnixListener;
 use std::sync::OnceLock;
+use ur44::ipc;
 use tray_icon::menu::{Menu, MenuEvent, MenuId, MenuItem, PredefinedMenuItem, Submenu};
 use tray_icon::{Icon, TrayIcon, TrayIconBuilder};
 
@@ -15,8 +15,8 @@ pub enum Control {
     Quit,
 }
 
-/// The listening socket is bound in main() (before the UI starts) and handed to the stream.
-pub static LISTENER: OnceLock<UnixListener> = OnceLock::new();
+/// The control channel is bound in main() (before the UI starts) and handed to the stream.
+pub static LISTENER: OnceLock<ipc::Listener> = OnceLock::new();
 
 pub struct Tray {
     icon: TrayIcon,
@@ -28,14 +28,15 @@ pub struct Tray {
     scene_ids: Vec<(MenuId, usize)>,
 }
 
-/// 18×18 template image: three mixer faders (black + alpha; macOS tints it for light/dark).
+/// 18×18 image: three mixer faders. macOS: a black template image (tinted for light/dark).
+/// Elsewhere there is no tinting: white faders with a dark outline read on any taskbar.
 fn icon_image() -> Icon {
     let (w, h) = (18u32, 18u32);
-    let mut px = vec![0u8; (w * h * 4) as usize];
+    let mut alpha = vec![0u8; (w * h) as usize];
     let mut set = |x: u32, y: u32, a: u8| {
         if x < w && y < h {
-            let i = ((y * w + x) * 4) as usize;
-            px[i + 3] = px[i + 3].max(a);
+            let i = (y * w + x) as usize;
+            alpha[i] = alpha[i].max(a);
         }
     };
     for (col, knob) in [(4u32, 11u32), (9, 5), (14, 9)] {
@@ -48,6 +49,27 @@ fn icon_image() -> Icon {
             }
         }
     }
+    let mut px = vec![0u8; (w * h * 4) as usize];
+    for y in 0..h {
+        for x in 0..w {
+            let i = (y * w + x) as usize;
+            let a = alpha[i];
+            if cfg!(target_os = "macos") {
+                px[i * 4 + 3] = a;
+            } else if a > 0 {
+                px[i * 4..i * 4 + 4].copy_from_slice(&[0xF2, 0xF4, 0xF8, a.max(220)]);
+            } else {
+                // Outline: a dark pixel next to any drawn one.
+                let near = [(-1i32, 0i32), (1, 0), (0, -1), (0, 1)].iter().any(|(dx, dy)| {
+                    let (nx, ny) = (x as i32 + dx, y as i32 + dy);
+                    nx >= 0 && ny >= 0 && (nx as u32) < w && (ny as u32) < h && alpha[(ny as u32 * w + nx as u32) as usize] > 0
+                });
+                if near {
+                    px[i * 4..i * 4 + 4].copy_from_slice(&[0x10, 0x12, 0x18, 200]);
+                }
+            }
+        }
+    }
     Icon::from_rgba(px, w, h).expect("valid icon")
 }
 
@@ -55,10 +77,14 @@ impl Tray {
     pub fn new(scenes: &[String]) -> Result<Tray, String> {
         let status = MenuItem::new("UR44 \u{2014} starting\u{2026}", false, None);
         let (menu, open_id, settings_id, quit_id, scene_ids) = build_menu(&status, scenes)?;
-        let icon = TrayIconBuilder::new()
-            .with_menu(Box::new(menu))
-            .with_tooltip("UR44 Mixer")
-            .with_icon_templated(icon_image())
+        let builder = TrayIconBuilder::new().with_menu(Box::new(menu)).with_tooltip("UR44 Mixer");
+        #[cfg(target_os = "macos")]
+        let builder = builder.with_icon_templated(icon_image());
+        #[cfg(not(target_os = "macos"))]
+        let builder = builder.with_icon(icon_image());
+        let icon = builder
+            // Windows: left click opens the window, right click shows the menu.
+            .with_menu_on_left_click(!cfg!(windows))
             .build()
             .map_err(|e| e.to_string())?;
         Ok(Tray { icon, status, last_status: String::new(), open_id, settings_id, quit_id, scene_ids })
@@ -140,14 +166,28 @@ pub fn events() -> impl Stream<Item = Incoming> {
                 }
             }
         });
+        // Windows convention: a left click on the notification-area icon opens the window
+        // (the menu is on the right button).
+        #[cfg(windows)]
+        {
+            use tray_icon::{MouseButton, MouseButtonState, TrayIconEvent};
+            let mut click_out = out.clone();
+            std::thread::spawn(move || {
+                while let Ok(ev) = TrayIconEvent::receiver().recv() {
+                    if let TrayIconEvent::Click { button: MouseButton::Left, button_state: MouseButtonState::Up, .. } = ev
+                        && block_on(click_out.send(Incoming::Launcher(Control::Show))).is_err()
+                    {
+                        break;
+                    }
+                }
+            });
+        }
         if let Some(listener) = LISTENER.get() {
-            let listener = listener.try_clone().expect("socket");
             let mut sock_out = out.clone();
             std::thread::spawn(move || {
-                for stream in listener.incoming().flatten() {
-                    let mut line = String::new();
-                    let _ = BufReader::new(stream).read_line(&mut line);
-                    let c = match line.trim() {
+                for line in listener.incoming() {
+                    let c = match line.as_str() {
+                        "ping" => continue, // a background start checking for a running agent
                         "settings" => Control::ShowSettings,
                         "quit" => Control::Quit,
                         _ => Control::Show,

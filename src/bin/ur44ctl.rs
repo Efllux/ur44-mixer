@@ -6,6 +6,7 @@
 //!   ur44ctl dump                                 # every known parameter, by name
 //!   ur44ctl scan <from_id> <to_id> [channels]   # reads every id × channel, prints those that answer
 //!   ur44ctl watch                                # prints every message the UR44 sends (turn knobs / use buttons)
+//!   ur44ctl ports                                # lists MIDI ports and marks the UR44 control port
 
 use anyhow::{Context, Result, bail};
 use std::time::Duration;
@@ -26,7 +27,21 @@ fn main() -> Result<()> {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let cmd = args.first().map(String::as_str).unwrap_or("help");
     if cmd == "help" || cmd == "-h" || cmd == "--help" {
-        println!("usage: ur44ctl version | get <id|name> [ch] | set <name> <ch> <value> | dump | scan <from> <to> [channels] | watch");
+        println!("usage: ur44ctl version | get <id|name> [ch] | set <name> <ch> <value> | dump | scan <from> <to> [channels] | watch | ports");
+        return Ok(());
+    }
+    if cmd == "ports" {
+        // Diagnostics without touching the UR44: every MIDI port, and which one would be used.
+        let (ins, outs) = ur44::device::midi_port_names();
+        for (dir, names) in [("in ", ins), ("out", outs)] {
+            if names.is_empty() {
+                println!("{dir}  (no MIDI ports)");
+            }
+            for n in names {
+                let mark = if ur44::device::is_control_port(&n) { "  <- UR44 control port" } else { "" };
+                println!("{dir}  {n}{mark}");
+            }
+        }
         return Ok(());
     }
     let mut dev = Ur44::connect()?;

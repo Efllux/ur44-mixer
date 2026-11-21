@@ -39,17 +39,46 @@ pub fn load(path: &Path) -> Result<SweetSpot> {
     Ok(SweetSpot { name: format!("{folder} / {stem}"), path: path.to_path_buf(), points: parse(&bytes)? })
 }
 
+/// Where Yamaha's TOOLS install the presets on macOS.
 pub const SYSTEM_DIR: &str = "/Library/Application Support/Yamaha/SSMD";
 
-/// All installed Sweet Spot files, sorted by folder then name.
+/// Folders searched for presets, in order. `UR44_SSMD_DIR` (if set) comes first.
+pub fn search_dirs() -> Vec<PathBuf> {
+    #[allow(unused_mut)] // nothing is added on platforms without known locations
+    let mut dirs: Vec<PathBuf> = std::env::var_os("UR44_SSMD_DIR").map(PathBuf::from).into_iter().collect();
+    #[cfg(target_os = "macos")]
+    dirs.push(PathBuf::from(SYSTEM_DIR));
+    #[cfg(windows)]
+    {
+        // Yamaha's Windows installers have used several roots over the years.
+        let roots = ["ProgramData", "ProgramFiles", "CommonProgramFiles", "ProgramFiles(x86)", "CommonProgramFiles(x86)", "APPDATA", "LOCALAPPDATA"];
+        for var in roots {
+            if let Some(root) = std::env::var_os(var).map(PathBuf::from) {
+                for sub in ["Yamaha\\SSMD", "Steinberg\\SSMD", "Yamaha\\dspMixFx\\SSMD", "Steinberg\\dspMixFx\\SSMD"] {
+                    let d = root.join(sub);
+                    if !dirs.contains(&d) {
+                        dirs.push(d);
+                    }
+                }
+            }
+        }
+    }
+    dirs
+}
+
+/// All installed Sweet Spot files, sorted by folder then name. Missing folders are skipped;
+/// a preset found in more than one folder is listed once.
 pub fn installed() -> Vec<SweetSpot> {
-    let mut out = Vec::new();
-    let Ok(dirs) = std::fs::read_dir(SYSTEM_DIR) else { return out };
-    for d in dirs.flatten() {
-        let Ok(files) = std::fs::read_dir(d.path()) else { continue };
-        for f in files.flatten() {
-            if f.path().extension().is_some_and(|e| e.eq_ignore_ascii_case("ssd")) {
-                if let Ok(s) = load(&f.path()) {
+    let mut out: Vec<SweetSpot> = Vec::new();
+    for root in search_dirs() {
+        let Ok(dirs) = std::fs::read_dir(&root) else { continue };
+        for d in dirs.flatten() {
+            let Ok(files) = std::fs::read_dir(d.path()) else { continue };
+            for f in files.flatten() {
+                if f.path().extension().is_some_and(|e| e.eq_ignore_ascii_case("ssd"))
+                    && let Ok(s) = load(&f.path())
+                    && !out.iter().any(|o| o.name == s.name)
+                {
                     out.push(s);
                 }
             }

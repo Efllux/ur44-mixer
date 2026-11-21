@@ -1,5 +1,6 @@
 //! Scenes: complete mixer snapshots stored as JSON files (one per scene) in
-//! ~/Library/Application Support/UR44 Mixer/Scenes. Import/export = copy files in Finder.
+//! the `Scenes` folder of `paths::support_dir()` (~/Library/Application Support/UR44 Mixer on
+//! macOS, %APPDATA%\UR44 Mixer on Windows). Import/export = copy files in Finder/Explorer.
 
 use crate::catalog::{self, Access};
 use crate::logic::{self, Values, Writes};
@@ -24,8 +25,7 @@ pub struct Scene {
 }
 
 pub fn dir() -> PathBuf {
-    let home = std::env::var_os("HOME").map(PathBuf::from).unwrap_or_else(|| PathBuf::from("."));
-    home.join("Library/Application Support/UR44 Mixer/Scenes")
+    crate::paths::support_dir().join("Scenes")
 }
 
 /// Is this parameter part of a scene? Hardware-mirrored values are excluded.

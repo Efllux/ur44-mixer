@@ -72,12 +72,19 @@ impl UsbLink {
                     .unwrap_or(false)
             })
             .context("UR44 in Yamaha mode not found")?;
-        let h = dev.open().context("opening the UR44")?;
+        // Windows: libusb can only open interfaces bound to WinUSB (or libusbK/UsbDk). Binding
+        // one would replace Yamaha's driver, so this normally fails there: say what to do instead.
+        #[cfg(windows)]
+        const HOW: &str = " (Windows: direct USB access to the mixer needs a WinUSB driver, which \
+            would replace Yamaha's driver. Switch CC MODE on and power-cycle the UR44 to use MIDI instead)";
+        #[cfg(not(windows))]
+        const HOW: &str = "";
+        let h = dev.open().with_context(|| format!("opening the UR44{HOW}"))?;
         if h.active_configuration().unwrap_or(0) == 0 {
             // Normally the audio plug-in configures the device; do it if nothing has.
             let _ = h.set_active_configuration(1);
         }
-        h.claim_interface(MIXER_IF).context("claiming the mixer interface (4)")?;
+        h.claim_interface(MIXER_IF).with_context(|| format!("claiming the mixer interface (4){HOW}"))?;
         let handle = Arc::new(h);
         let stop = Arc::new(AtomicBool::new(false));
         let (h2, stop2) = (handle.clone(), stop.clone());
@@ -156,19 +163,46 @@ fn usb_reader(handle: Arc<rusb::DeviceHandle<rusb::Context>>, stop: Arc<AtomicBo
     }
 }
 
+/// Is this MIDI port the UR44's second port (the one that carries the DSP mixer)?
+/// Names differ per OS and driver:
+///   macOS (CoreMIDI):                 "Steinberg UR44 Port 2"
+///   Windows class driver (CC mode):   "MIDIIN2 (Steinberg UR44)" / "MIDIOUT2 (Steinberg UR44)"
+///   Windows, Yamaha Steinberg driver: "Steinberg UR44-2"
+///   Linux (ALSA):                     "Steinberg UR44:Steinberg UR44 MIDI 2 20:1"
+/// A leading "2- " is Windows' marker for a second device with the same name, not port 2.
+pub fn is_control_port(name: &str) -> bool {
+    let n = name.trim().to_ascii_uppercase();
+    if !n.contains(PORT_MATCH) {
+        return false;
+    }
+    let head = n.split_whitespace().next().unwrap_or("");
+    n.ends_with(&CONTROL_PORT_SUFFIX.to_ascii_uppercase())
+        || head == "MIDIIN2"
+        || head == "MIDIOUT2"
+        || n.ends_with("-2")
+        || n.contains("MIDI 2 ")
+}
+
+/// Names of all MIDI input and output ports, for diagnostics.
+pub fn midi_port_names() -> (Vec<String>, Vec<String>) {
+    fn names<T: midir::MidiIO>(io: &T) -> Vec<String> {
+        io.ports().iter().filter_map(|p| io.port_name(p).ok()).collect()
+    }
+    let ins = MidiInput::new("ur44-list").map(|i| names(&i)).unwrap_or_default();
+    let outs = MidiOutput::new("ur44-list").map(|o| names(&o)).unwrap_or_default();
+    (ins, outs)
+}
+
 fn find_port<T: midir::MidiIO>(io: &T) -> Result<T::Port> {
-    io.ports()
-        .into_iter()
-        .find(|p| {
-            io.port_name(p)
-                .map(|n| n.contains(PORT_MATCH) && n.trim_end().ends_with(CONTROL_PORT_SUFFIX))
-                .unwrap_or(false)
-        })
+    let ports = io.ports();
+    ports
+        .iter()
+        .find(|p| io.port_name(p).map(|n| is_control_port(&n)).unwrap_or(false))
+        .cloned()
         .ok_or_else(|| {
-            anyhow!(
-                "UR44 control port not found. Is the UR44 powered on in CC mode, \
-                 with no Yamaha driver installed?"
-            )
+            let names: Vec<String> = ports.iter().filter_map(|p| io.port_name(p).ok()).collect();
+            let seen = if names.is_empty() { "no MIDI ports at all".to_string() } else { format!("ports seen: {}", names.join(", ")) };
+            anyhow!("UR44 control port not found ({seen}). Is the UR44 powered on in CC mode?")
         })
 }
 
@@ -342,5 +376,35 @@ impl Ur44 {
 
     pub fn recv_timeout(&self, t: Duration) -> Option<Vec<u8>> {
         self.rx.recv_timeout(t).ok()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::is_control_port;
+
+    #[test]
+    fn control_port_names() {
+        for yes in [
+            "Steinberg UR44 Port 2",
+            "MIDIIN2 (Steinberg UR44)",
+            "MIDIOUT2 (Steinberg UR44)",
+            "MIDIIN2 (2- Steinberg UR44)",
+            "Steinberg UR44-2",
+            "Steinberg UR44:Steinberg UR44 MIDI 2 20:1",
+        ] {
+            assert!(is_control_port(yes), "{yes}");
+        }
+        for no in [
+            "Steinberg UR44 Port 1",
+            "Steinberg UR44",
+            "2- Steinberg UR44",
+            "Steinberg UR44-1",
+            "MIDIIN2 (Other Device)",
+            "Steinberg UR44:Steinberg UR44 MIDI 1 20:0",
+            "Microsoft GS Wavetable Synth",
+        ] {
+            assert!(!is_control_port(no), "{no}");
+        }
     }
 }

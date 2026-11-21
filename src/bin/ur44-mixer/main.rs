@@ -1,8 +1,12 @@
 //! UR44 Mixer — a modern replacement for dspMixFx UR44.
 //! Talks to the UR44's DSP over the class-compliant MIDI "Port 2" (no Yamaha driver needed).
 
+// Windows release builds are GUI apps: no console window.
+#![cfg_attr(all(windows, not(debug_assertions)), windows_subsystem = "windows")]
+
 mod glass;
 mod graphs;
+mod os;
 mod prefs;
 mod tray;
 mod worker;
@@ -34,18 +38,16 @@ pub fn main() -> iced::Result {
             .run_with(move || App::new(false));
     }
     // Single instance: if an agent is already running, ask it to show its window and exit.
-    let sock = prefs::socket_path();
-    if let Ok(mut s) = std::os::unix::net::UnixStream::connect(&sock) {
-        use std::io::Write;
-        if !background {
-            let _ = writeln!(s, "show");
-        }
+    if ur44::ipc::send(if background { "ping" } else { "show" }) {
         return Ok(());
     }
     let _ = std::fs::create_dir_all(prefs::support_dir());
-    let _ = std::fs::remove_file(&sock);
-    if let Ok(l) = std::os::unix::net::UnixListener::bind(&sock) {
-        let _ = tray::LISTENER.set(l);
+    worker::log_start();
+    match ur44::ipc::Listener::bind() {
+        Ok(l) => {
+            let _ = tray::LISTENER.set(l);
+        }
+        Err(e) => worker::log(&format!("launcher channel unavailable: {e}")),
     }
     iced::daemon(App::title, App::update, App::view)
         .subscription(App::subscription)
@@ -281,7 +283,7 @@ impl App {
         match (self.prefs.tray, self.tray.is_some()) {
             (prefs::TrayMode::MenuBar, false) => match tray::Tray::new(&self.scene_names()) {
                 Ok(t) => self.tray = Some(t),
-                Err(e) => self.notice = Some(format!("Menu bar icon unavailable: {e}")),
+                Err(e) => self.notice = Some(format!("{}: {e}", os::TRAY_UNAVAILABLE)),
             },
             (prefs::TrayMode::Hidden, true) => self.tray = None,
             _ => {}
@@ -351,9 +353,13 @@ impl App {
             Msg::ShowWindow(page) => {
                 self.page = page;
                 if let Some(id) = self.window {
+                    // Windows: bring a minimized window back before focusing it.
+                    #[cfg(windows)]
+                    return window::minimize(id, false).chain(window::gain_focus(id));
+                    #[cfg(not(windows))]
                     return window::gain_focus(id);
                 }
-                self.window_glass = self.prefs.glass;
+                self.window_glass = self.prefs.glass && os::GLASS;
                 // UR44_SIZE=WxH (rig and testing); default 1360x880.
                 let size = std::env::var("UR44_SIZE")
                     .ok()
@@ -431,7 +437,7 @@ impl App {
             Msg::Quit => {
                 self.dirty = true;
                 self.save_state();
-                let _ = std::fs::remove_file(prefs::socket_path());
+                ur44::ipc::cleanup();
                 iced::exit()
             }
             Msg::PrefLogin(on) => {
@@ -653,7 +659,7 @@ impl App {
             }
             Msg::ScenesFolder => {
                 let _ = std::fs::create_dir_all(scene::dir());
-                let _ = std::process::Command::new("open").arg(scene::dir()).spawn();
+                ur44::paths::reveal(&scene::dir());
             }
             Msg::Dismiss => self.notice = None,
             Msg::Details(on) => self.details = on,
@@ -833,7 +839,7 @@ impl App {
             text("Can\u{2019}t reach your UR44").size(24).color(glass::TEXT_HI),
             text("UR44 Mixer keeps looking and connects by itself as soon as the UR44 answers.").size(13).color(glass::TEXT),
             Space::with_height(4),
-            step("1", "Connect the USB cable", "Plug the UR44 straight into this Mac (avoid unpowered hubs)."),
+            step("1", "Connect the USB cable", os::CONNECT_NOTE),
             step("2", "Switch the UR44 on", "Check that its power adapter is plugged in and the POWER switch is on."),
             container(
                 column![
@@ -1329,7 +1335,7 @@ impl App {
         let names: Vec<String> = self.presets.iter().map(|p| p.name.clone()).collect();
         let lookup = names.clone();
         let preset: Element<Msg> = if names.is_empty() {
-            text("Sweet Spot presets not found in /Library/Application Support/Yamaha/SSMD").size(13).into()
+            text(os::presets_missing()).size(13).into()
         } else {
             pick_list(names, current.map(|i| self.presets[i].name.clone()), move |n: String| {
                 Msg::SweetSpot(s, lookup.iter().position(|x| *x == n).unwrap_or(0))
@@ -1588,7 +1594,7 @@ impl App {
             row![
                 text("Scenes are JSON files; copy them in or out of the folder to import or export.").size(13),
                 horizontal_space(),
-                button(text("Show in Finder").size(13)).style(glass::secondary).on_press(Msg::ScenesFolder),
+                button(text(os::FILE_MANAGER).size(13)).style(glass::secondary).on_press(Msg::ScenesFolder),
             ]
             .align_y(Alignment::Center),
         ]
@@ -1613,7 +1619,7 @@ impl App {
             text("Settings").size(22),
             card(
                 column![
-                    line("Sample rate", text(units::format("SysFsCode", self.get("SysFsCode", 0))).size(15).into(), "Set in Audio MIDI Setup or by your recording software. Effects need 96 kHz or lower."),
+                    line("Sample rate", text(units::format("SysFsCode", self.get("SysFsCode", 0))).size(15).into(), os::SAMPLE_RATE_NOTE),
                     line(
                         "Input 5/6 level",
                         pick_list(ur44::catalog::display::INPUT56_LEVEL, Some(ur44::catalog::display::INPUT56_LEVEL[self.get("HaInputGain", 2).clamp(0, 1) as usize]), |s: &str| {
@@ -1656,29 +1662,33 @@ impl App {
                     ),
                     line(
                         "Show in",
-                        pick_list(["Menu bar", "Invisible"], Some(if self.prefs.tray == prefs::TrayMode::MenuBar { "Menu bar" } else { "Invisible" }), |s: &str| {
-                            Msg::PrefTray(if s == "Menu bar" { prefs::TrayMode::MenuBar } else { prefs::TrayMode::Hidden })
+                        pick_list([os::TRAY, "Invisible"], Some(if self.prefs.tray == prefs::TrayMode::MenuBar { os::TRAY } else { "Invisible" }), |s: &str| {
+                            Msg::PrefTray(if s == os::TRAY { prefs::TrayMode::MenuBar } else { prefs::TrayMode::Hidden })
                         })
                         .width(Length::Fill)
                         .into(),
-                        "Invisible: no icon anywhere. Open \u{201c}UR44 Mixer\u{201d} from Applications or Spotlight to show this window.",
+                        os::HIDDEN_NOTE,
                     ),
                     line(
                         "Restore last settings",
                         toggle(if self.prefs.restore_on_connect { "ON" } else { "OFF" }, self.prefs.restore_on_connect, Msg::PrefRestore(!self.prefs.restore_on_connect), Kind::Accent),
                         "When the UR44 is switched on, put back any mixer settings that differ from your last session.",
                     ),
+                ]
+                .push_maybe(os::GLASS.then(|| {
                     line(
                         "Liquid Glass",
                         toggle(if self.prefs.glass { "ON" } else { "OFF" }, self.prefs.glass, Msg::PrefGlass(!self.prefs.glass), Kind::Accent),
                         "Translucent window with the macOS glass material behind the controls. Follows \u{201c}Reduce transparency\u{201d}.",
-                    ),
+                    )
+                }))
+                .push(
                     line(
                         "Quit",
                         button(text("Quit UR44 Mixer").size(13).center().width(Length::Fill)).width(Length::Fill).style(glass::danger).on_press(Msg::Quit).into(),
                         "Stops the background app until you open it again or log in.",
                     ),
-                ]
+                )
                 .spacing(18)
                 .into()
             ),

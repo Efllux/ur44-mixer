@@ -42,6 +42,26 @@ fn emit(out: &mut mpsc::Sender<Event>, e: Event) -> bool {
     block_on(out.send(e)).is_ok()
 }
 
+fn log_path() -> std::path::PathBuf {
+    ur44::paths::support_dir().join("ur44-mixer.log")
+}
+
+/// Start a new log for this run (`ur44-mixer.log` in the support folder).
+pub fn log_start() {
+    let _ = std::fs::write(log_path(), "");
+    log(&format!("ur44-mixer {} starting", env!("CARGO_PKG_VERSION")));
+}
+
+/// Log to stderr and to the log file (a Windows GUI build has no console).
+pub fn log(msg: &str) {
+    use std::io::Write;
+    eprintln!("ur44-mixer: {msg}");
+    let secs = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
+    if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(log_path()) {
+        let _ = writeln!(f, "[{secs}] {msg}");
+    }
+}
+
 /// Parameters that can change without the app touching them.
 fn polled() -> Vec<Address> {
     let mut v = Vec::new();
@@ -62,11 +82,17 @@ fn worker(rx: std_mpsc::Receiver<Command>, mut out: mpsc::Sender<Event>) {
     let poll_list = polled();
     // Meters only stream while a window is open (the app sends Meters(true) then).
     let mut meters_on = false;
+    let mut last_error = String::new();
     loop {
         let mut dev = match Ur44::connect() {
             Ok(d) => d,
             Err(e) => {
-                if !emit(&mut out, Event::Disconnected(e.to_string())) {
+                let e = format!("{e:#}");
+                if e != last_error {
+                    log(&format!("not connected: {e}"));
+                    last_error = e.clone();
+                }
+                if !emit(&mut out, Event::Disconnected(e)) {
                     return;
                 }
                 std::thread::sleep(Duration::from_secs(2));
@@ -83,7 +109,8 @@ fn worker(rx: std_mpsc::Receiver<Command>, mut out: mpsc::Sender<Event>) {
             .version()
             .map(|v| v.iter().map(|(k, ver)| format!("{k} {ver}")).collect::<Vec<_>>().join(" · "))
             .unwrap_or_default();
-        eprintln!("ur44-mixer: connected ({firmware})");
+        last_error.clear();
+        log(&format!("connected via {:?} ({firmware})", dev.link_kind()));
         if !emit(&mut out, Event::Connected { firmware }) {
             return;
         }
@@ -102,7 +129,7 @@ fn worker(rx: std_mpsc::Receiver<Command>, mut out: mpsc::Sender<Event>) {
                 return;
             }
         }
-        eprintln!("ur44-mixer: loaded {} of {} parameters", values.len(), total);
+        log(&format!("loaded {} of {} parameters", values.len(), total));
         if !emit(&mut out, Event::Values(values)) {
             return;
         }

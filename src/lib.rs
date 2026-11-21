@@ -11,3 +11,5 @@ pub mod ssd;
 pub mod scene;
 pub mod dsp;
 pub mod usbmidi;
+pub mod paths;
+pub mod ipc;
