@@ -843,8 +843,8 @@ impl App {
             step("2", "Switch the UR44 on", "Check that its power adapter is plugged in and the POWER switch is on."),
             container(
                 column![
-                    text("If you use CC MODE").size(13).color(glass::TEXT),
-                    text("The UR44 works with this app with CC MODE on or off. CC MODE is only read at power-on: after changing it, switch the UR44 off and on again.")
+                    text(os::CC_MODE_TITLE).size(13).color(glass::TEXT),
+                    text(os::CC_MODE_NOTE)
                         .size(12)
                         .color(glass::TEXT_MUTED),
                 ]

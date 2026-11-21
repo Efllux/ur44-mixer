@@ -42,6 +42,11 @@ fn main() -> Result<()> {
                 println!("{dir}  {n}{mark}");
             }
         }
+        match ur44::device::usb_devices() {
+            Ok(devs) if devs.is_empty() => println!("usb  (no Yamaha/Steinberg USB device visible to libusb)"),
+            Ok(devs) => devs.iter().for_each(|d| println!("usb  {d}")),
+            Err(e) => println!("usb  (libusb unavailable: {e})"),
+        }
         return Ok(());
     }
     let mut dev = Ur44::connect()?;

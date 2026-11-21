@@ -193,6 +193,27 @@ pub fn midi_port_names() -> (Vec<String>, Vec<String>) {
     (ins, outs)
 }
 
+/// Yamaha/Steinberg USB devices libusb can see (vendor 0x0499), for diagnostics.
+pub fn usb_devices() -> Result<Vec<String>> {
+    use rusb::UsbContext;
+    let ctx = rusb::Context::new()?;
+    Ok(ctx
+        .devices()?
+        .iter()
+        .filter_map(|d| {
+            let dd = d.device_descriptor().ok()?;
+            (dd.vendor_id() == VID).then(|| {
+                let mode = match (dd.product_id(), dd.class_code()) {
+                    (PID, 0xFF) => " (UR44, Yamaha mode: CC MODE off)",
+                    (PID, _) => " (UR44)",
+                    _ => "",
+                };
+                format!("{:04x}:{:04x} class {:02x} bus {} addr {}{mode}", dd.vendor_id(), dd.product_id(), dd.class_code(), d.bus_number(), d.address())
+            })
+        })
+        .collect())
+}
+
 fn find_port<T: midir::MidiIO>(io: &T) -> Result<T::Port> {
     let ports = io.ports();
     ports

@@ -39,6 +39,17 @@ mod text {
 
 pub use text::*;
 
+/// The waiting screen's note about CC MODE. Only macOS has a Yamaha-mode link (our own audio
+/// driver + USB interface 4); elsewhere the mixer is reached over class-compliant MIDI only.
+#[cfg(target_os = "macos")]
+pub const CC_MODE_TITLE: &str = "If you use CC MODE";
+#[cfg(target_os = "macos")]
+pub const CC_MODE_NOTE: &str = "The UR44 works with this app with CC MODE on or off. CC MODE is only read at power-on: after changing it, switch the UR44 off and on again.";
+#[cfg(not(target_os = "macos"))]
+pub const CC_MODE_TITLE: &str = "Turn CC MODE on";
+#[cfg(not(target_os = "macos"))]
+pub const CC_MODE_NOTE: &str = "On this system the app reaches the mixer through the UR44\u{2019}s class-compliant MIDI port, which needs CC MODE on. CC MODE is only read at power-on: after changing it, switch the UR44 off and on again.";
+
 /// Where Sweet Spot presets were looked for (shown when none are found).
 pub fn presets_missing() -> String {
     let dirs: Vec<String> = ur44::ssd::search_dirs()
