@@ -39,8 +39,32 @@ cargo test
 ./tools/bundle.sh          # builds ~/Applications/UR44 Mixer.app
 ```
 
-`ur44ctl` is a command-line tool: `version`, `get`, `set`, `dump`, `watch`, `scan`, and two
-non-destructive hardware self-tests (`selftest-recall`, `selftest-strip`).
+`ur44ctl` is a command-line tool: `version`, `get`, `set`, `dump`, `watch`, `scan`, `ports`
+(lists MIDI ports, no device access), and two non-destructive hardware self-tests
+(`selftest-recall`, `selftest-strip`).
+
+## Windows
+
+Requires Rust with the MSVC toolchain (Visual Studio Build Tools, C++ workload). Installs
+for the current user only, no admin rights and no drivers:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools\install-windows.ps1 -StartAtLogin -Launch
+# remove again: tools\install-windows.ps1 -Uninstall
+```
+
+This puts `ur44-mixer.exe`, `ur44-open.exe` and `ur44ctl.exe` in
+`%LOCALAPPDATA%\Programs\UR44 Mixer`, adds a "UR44 Mixer" Start menu shortcut, and with
+`-StartAtLogin` an `HKCU\…\Run` entry (the Settings toggle controls the same entry). Settings,
+scenes and a log (`ur44-mixer.log`) live in `%APPDATA%\UR44 Mixer`.
+
+On Windows the mixer is reached over MIDI only: switch **CC MODE on** (and power-cycle the
+UR44) so Windows' built-in drivers provide the MIDI ports (`MIDIIN2/MIDIOUT2 (… UR44)`).
+The Yamaha-mode USB link used on macOS would need a WinUSB driver in place of Yamaha's, so it
+is not used. The Core Audio driver in `driver/` is macOS-only. `ur44ctl ports` shows which
+MIDI port is used.
+
+![UR44 Mixer on Windows](docs/screenshots/windows.png)
 
 ## How it works
 
