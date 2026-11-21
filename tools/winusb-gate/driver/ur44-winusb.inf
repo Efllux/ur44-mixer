@@ -1,0 +1,101 @@
+; ur44-winusb.inf: binds Microsoft's in-box drivers to the Steinberg UR44 in vendor mode
+; (CC MODE off, USB 0499:150E, device class 0xFF). No driver binaries are shipped:
+;   - the device itself gets usbccgp.sys (the in-box composite driver, as usb.inf does for
+;     other vendor-class composite devices), so Windows splits it into MI_00 .. MI_04;
+;   - every interface gets winusb.sys, each with its own device interface GUID.
+; MIT licence, part of github.com/Efllux/ur44-mixer. Undo: see docs/winusb-gate-results.md.
+
+[Version]
+Signature   = "$Windows NT$"
+Class       = USBDevice
+ClassGuid   = {88BAE032-5A81-49f0-BC3D-A4FF138216D6}
+Provider    = %Provider%
+CatalogFile = ur44-winusb.cat
+DriverVer   = 11/21/2026,1.0.0.0
+PnpLockdown = 1
+
+[Manufacturer]
+%Provider% = UR44, NTamd64
+
+[UR44.NTamd64]
+%UR44.Composite% = Composite_Install, USB\VID_0499&PID_150E
+%UR44.MI00%      = WinUsb_MI00,       USB\VID_0499&PID_150E&MI_00
+%UR44.MI01%      = WinUsb_MI01,       USB\VID_0499&PID_150E&MI_01
+%UR44.MI02%      = WinUsb_MI02,       USB\VID_0499&PID_150E&MI_02
+%UR44.MI03%      = WinUsb_MI03,       USB\VID_0499&PID_150E&MI_03
+%UR44.MI04%      = WinUsb_MI04,       USB\VID_0499&PID_150E&MI_04
+
+; ---- the device: in-box composite driver ----
+[Composite_Install.NT]
+Include = usb.inf
+Needs   = Composite.Dev.NT
+
+[Composite_Install.NT.Services]
+Include = usb.inf
+Needs   = Composite.Dev.NT.Services
+
+; ---- the interfaces: in-box WinUSB ----
+[WinUsb_MI00.NT]
+Include = winusb.inf
+Needs   = WINUSB.NT
+[WinUsb_MI00.NT.Services]
+Include = winusb.inf
+Needs   = WINUSB.NT.Services
+[WinUsb_MI00.NT.HW]
+AddReg = MI00_AddReg
+
+[WinUsb_MI01.NT]
+Include = winusb.inf
+Needs   = WINUSB.NT
+[WinUsb_MI01.NT.Services]
+Include = winusb.inf
+Needs   = WINUSB.NT.Services
+[WinUsb_MI01.NT.HW]
+AddReg = MI01_AddReg
+
+[WinUsb_MI02.NT]
+Include = winusb.inf
+Needs   = WINUSB.NT
+[WinUsb_MI02.NT.Services]
+Include = winusb.inf
+Needs   = WINUSB.NT.Services
+[WinUsb_MI02.NT.HW]
+AddReg = MI02_AddReg
+
+[WinUsb_MI03.NT]
+Include = winusb.inf
+Needs   = WINUSB.NT
+[WinUsb_MI03.NT.Services]
+Include = winusb.inf
+Needs   = WINUSB.NT.Services
+[WinUsb_MI03.NT.HW]
+AddReg = MI03_AddReg
+
+[WinUsb_MI04.NT]
+Include = winusb.inf
+Needs   = WINUSB.NT
+[WinUsb_MI04.NT.Services]
+Include = winusb.inf
+Needs   = WINUSB.NT.Services
+[WinUsb_MI04.NT.HW]
+AddReg = MI04_AddReg
+
+[MI00_AddReg]
+HKR,,DeviceInterfaceGUIDs,0x10000,"{965796B8-D019-49AA-B9D8-D633B0501490}"
+[MI01_AddReg]
+HKR,,DeviceInterfaceGUIDs,0x10000,"{770BC14B-1B5F-4694-AF40-DFB1E8E9A178}"
+[MI02_AddReg]
+HKR,,DeviceInterfaceGUIDs,0x10000,"{07471BC0-6198-450E-8F47-C5D9D5888688}"
+[MI03_AddReg]
+HKR,,DeviceInterfaceGUIDs,0x10000,"{DA2566FB-966D-42A3-9357-5697AE252CB4}"
+[MI04_AddReg]
+HKR,,DeviceInterfaceGUIDs,0x10000,"{F903F222-BECA-4D27-A931-319E0AF0FCCE}"
+
+[Strings]
+Provider       = "ur44-mixer (open source)"
+UR44.Composite = "Steinberg UR44 (WinUSB, vendor mode)"
+UR44.MI00      = "Steinberg UR44 interface 0 (audio control)"
+UR44.MI01      = "Steinberg UR44 interface 1 (playback)"
+UR44.MI02      = "Steinberg UR44 interface 2 (capture)"
+UR44.MI03      = "Steinberg UR44 interface 3 (MIDI)"
+UR44.MI04      = "Steinberg UR44 interface 4 (DSP mixer)"
