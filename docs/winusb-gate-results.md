@@ -3,7 +3,8 @@
 Results of `tools/winusb-gate` on Windows 10 LTSC. The UR44 is bound to in-box `winusb.sys` with
 `driver/ur44-winusb.inf`: usbccgp on the parent and WinUSB on MI_00..MI_04. The 48 kHz measurement
 log is in `tools/winusb-gate/results/gate-log.txt`. This file starts with the crash investigation.
-The other result sections are still to be written.
+**Verdict (section 7): NO-GO for a WinUSB + ASIO driver.** The last OUT option,
+`ISO_NUM_FIXED_PACKETS`, does not exist in in-box winusb.sys.
 
 ## Crashes on 2026-11-21/22 (dump analysis)
 
@@ -138,6 +139,91 @@ real path is then a KMDF client driver (per-packet lengths in `URB_FUNCTION_ISOC
 needs signing, or CC mode / Yamaha's driver.
 
 IN (capture) with whole-frame reads stays usable for measurements.
+
+**Result (section 7):** winusb.sys rejects the policy (error 87), so G2 is failed for OUT.
+
+## 7. ISO_NUM_FIXED_PACKETS and the device clock (2026-11-22, on the main PC)
+
+The user explicitly asked for this measurement on the main PC (not a separate machine). Safety
+measures in the tool for this and every later run:
+
+- **Guard in `winusb.rs`** (`guard_packets`, `guard_explicit`): every IN read and OUT write is
+  checked *before submission*. The packet count must be a non-zero multiple of 8. For OUT it is
+  computed as WinUSB builds it, `ceil(len / MaximumBytesPerInterval)`, not taken from any policy.
+  An IN read must be exactly `packets × MBPI`. An explicit-frame read or write is only allowed as
+  the first transfer on its buffer, never with transfers pending. A violation exits the process
+  (code 3) without submitting. Consequence: `stream`, `probe-write`, `probe-chain` with sub-frame
+  sizes and `probe-reanchor` now all stop at their first unsafe transfer. `stream`'s 864-byte
+  OUT lead-in is 7 packets.
+- New commands: `policy` (Get/SetPipePolicy only, no transfers) and `capture` (IN only, 8-packet
+  ASAP reads, ≥ 8 ms in flight, stops at the first non-zero packet status or transfer error).
+- UR44 Mixer must be closed for MI_01/MI_02. CreateFile fails with error 5 while it runs. It was
+  restarted afterwards.
+
+### Test 1: does WinUSB split whole-frame writes into 8 packets? No, the policy does not exist.
+
+`winusb-gate policy` on winusb.sys 10.0.19041.1030 (48 kHz alt 1, both pipes MBPI 126, Interval 1):
+
+| Policy | Get | Set 8 (1 / 2 / 4 byte value) |
+|---|---|---|
+| ISO_START_LATENCY 0x20 | error 87 | 87 / 87 / 87 |
+| ISO_ALWAYS_START_ASAP 0x21 | error 87 | 87 / 87 / 87 |
+| **ISO_NUM_FIXED_PACKETS 0x22** | **error 87** | **87 / 87 / 87** |
+| MAXIMUM_TRANSFER_SIZE 0x08 (control) | 0x1FFFF8 | — |
+
+0x20–0x22 are **libusbK** ISO pipe policies (libusbK `lusbk_shared.h`, "libusbK ISO pipe policy
+types"). Microsoft's WinUSB pipe-policy list does not contain them, and in-box winusb.sys rejects
+them. `--fixed-packets` in `stream` was therefore never in effect: the engine only printed the error.
+
+So WinUSB still slices an OUT write into full 126-byte packets. 846, 864 and 882 bytes each become
+**7 packets** (6 × 126 + 90/108/126). That is a sub-frame URB, the pattern that crashed this PC, so
+the guard refuses it and nothing was submitted. No whole-frame OUT write can carry 48 kHz audio:
+8 packets need 883–1008 bytes = 49.1–56 frames per ms, front-loaded at 7 frames per packet. USB ETW
+tracing of the on-wire packet sizes was not needed, because there is no safe transfer whose split
+could be traced.
+
+Tests 2 (audio quality through MAIN → input 1) and 3 (round-trip latency) need a working OUT
+stream and **could not be run safely**. No OUT isoch transfer was submitted in this session.
+
+### Test 2 (partial): device clock, from capture only
+
+`winusb-gate capture` (8-packet ASAP reads, 16 in flight = 16 ms), run as 2 s, 10 s, 60 s and 5 min.
+The System event log was checked between runs: 0 errors or warnings apart from the usual DCOM/DNS.
+
+| Run | Packets | Sizes in frames (5 / 6 / 7) | Frames per ms | vs USB frame clock | Stop |
+|---|---|---|---|---|---|
+| 2 s | 15 968 | 7 / 15 959 / 2 | 47.9975 | −52 ppm | none |
+| 10 s | 79 968 | 32 / 79 928 / 8 | 47.9976 | −50 ppm | none |
+| 60 s | 479 968 | 192 / 479 728 / 48 | 47.9976 | −50 ppm | none |
+| 5 min | 2 399 976 | 1 018 / 2 398 659 / 299 | 47.9976 | −49.9 ppm | none |
+
+- Every IN packet had status 0. There were no late or not-accessed packets and no empty packets
+  after start, so whole-frame capture was clean for 5 min. The earlier 5-min `stream` runs saw ISO_NA
+  and LATE statuses on IN, which came from the concurrent sub-frame OUT traffic.
+- The UR44 clock runs **50 ppm slow** against the host's USB frame clock. It drops one frame every
+  ~0.42 s, mostly as a single 5-frame packet; 299 of the 5-frame packets are paired with a 7.
+  A host feeding a constant 48 frames per ms would gain one frame every **0.42 s** (about 2.4 per
+  second, 719 in 5 min). Without feedback the device's buffer would overflow and slip or click
+  on that scale. OUT sizes must follow the IN counts (implicit feedback), which need 5- and 6-frame
+  packets inside one 1 ms write. WinUSB cannot express that: it would need per-packet lengths, which
+  ISO_NUM_FIXED_PACKETS would not have given even if it existed (equal split only).
+
+### Test 3: round trip
+
+Not measured, because it needs OUT. For reference, the macOS driver does 1.55–1.71 ms. Even if OUT
+worked, the safety requirement of ≥ 8 ms of transfers in flight (so that nothing completes late)
+would put a WinUSB OUT path far above that.
+
+### Verdict: NO-GO for WinUSB + ASIO
+
+- OUT cannot be sized per packet: no per-packet length array, and the only policy that might have
+  helped (0x22) is not implemented by winusb.sys (error 87).
+- Every way to get 5/6/7-frame packets through WinUSB uses sub-frame URBs, which bugcheck Windows 10
+  21H2 when one completes late (3 crashes).
+- IN works: whole-frame capture is clean for 5 min, and the device clock is −50 ppm against the
+  USB frame clock.
+- Next options: a KMDF client driver that builds `URB_FUNCTION_ISOCH_TRANSFER` with its own packet
+  offsets (needs signing, or test signing on a separate machine), or CC mode / Yamaha's driver.
 
 ### 6. How the dumps were analysed
 

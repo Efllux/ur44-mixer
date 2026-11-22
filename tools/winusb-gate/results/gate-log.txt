@@ -1,0 +1,79 @@
+
+##### click-48k-d16 : winusb-gate stream --rate 48000 --d 16 --signal click --secs 15  (2026-11-22T00:16:29)
+--- result: 15.0 s, process CPU 2.34 s (15.6% of one core) ---
+IN : 14998 transfers, 119984 packets, 707173 frames (47.145 frames/ms), packet status errors {-1073741806: 1316}, transfer errors {31: 165}, submit errors {}, restarts 0, empty packets after stable 0, wait timeouts 0
+IN packet sizes (frames: count): {0: 2116, 5: 51, 6: 117801, 7: 16}
+OUT: 120001 writes, 720013 frames (IN-OUT -12840), submit errors {}, transfer errors {87: 118829}, restarts 0, clamped packets 0, wait timeouts 0
+OUT completion by start microframe (mod 8): ok [148, 147, 146, 146, 146, 146, 146, 146] error [14853, 14853, 14854, 14854, 14854, 14854, 14854, 14853]
+OUT writes pending at each callback (after reaping completed ones): n=14998 min=0 mean=0 max=7 writes | [-inf,1):14852 [6,8):146
+callback lag (completion seen minus end of the IN transfer's last microframe): n=14951 min=-134 mean=-87 max=1701 us | [-inf,0):14928 [0,50):4 [50,100):4 [100,150):1 [150,200):1 [200,300):2 [300,500):1 [500,750):3 [750,1000):3 [1000,2000):4
+OUT lead (bus time of the write's first microframe minus submit time): n=119608 min=-762 mean=1429 max=1883 us | [-inf,0):26 [0,62):5 [62,125):4 [125,250):6 [250,375):10 [375,500):13 [500,750):26 [750,1000):159 [1000,1500):71704 [1500,2000):47655
+clicks emitted 55, never detected 55
+
+##### click-48k-d24 : winusb-gate stream --rate 48000 --d 24 --signal click --secs 15  (2026-11-22T00:16:45)
+--- result: 15.0 s, process CPU 2.50 s (16.7% of one core) ---
+IN : 14999 transfers, 119992 packets, 719916 frames (47.991 frames/ms), packet status errors {}, transfer errors {}, submit errors {}, restarts 0, empty packets after stable 0, wait timeouts 0
+IN packet sizes (frames: count): {5: 49, 6: 119930, 7: 13}
+OUT: 120017 writes, 720108 frames (IN-OUT -192), submit errors {}, transfer errors {87: 118845}, restarts 0, clamped packets 0, wait timeouts 0
+OUT completion by start microframe (mod 8): ok [148, 147, 146, 146, 146, 146, 146, 146] error [14855, 14855, 14856, 14856, 14856, 14856, 14856, 14855]
+OUT writes pending at each callback (after reaping completed ones): n=14999 min=0 mean=0 max=15 writes | [-inf,1):14853 [12,16):146
+callback lag (completion seen minus end of the IN transfer's last microframe): n=14999 min=-153 mean=-77 max=1302 us | [-inf,0):13258 [0,50):1737 [300,500):2 [1000,2000):2
+OUT lead (bus time of the write's first microframe minus submit time): n=119992 min=209 mean=2412 max=2909 us | [125,250):1 [250,375):1 [375,500):2 [500,750):4 [750,1000):5 [1000,1500):9 [1500,2000):3503 [2000,4000):116467
+clicks emitted 56, never detected 56
+
+##### click-48k-2ms-d24 : winusb-gate stream --rate 48000 --in-pk 16 --in 2 --d 24 --signal click --secs 15  (2026-11-22T00:17:00)
+--- result: 15.0 s, process CPU 2.48 s (16.6% of one core) ---
+IN : 7500 transfers, 119992 packets, 719915 frames (47.989 frames/ms), packet status errors {}, transfer errors {}, submit errors {}, restarts 0, empty packets after stable 0, wait timeouts 0
+IN packet sizes (frames: count): {5: 62, 6: 119905, 7: 25}
+OUT: 120017 writes, 720107 frames (IN-OUT -192), submit errors {}, transfer errors {87: 118845}, restarts 0, clamped packets 0, wait timeouts 0
+OUT completion by start microframe (mod 8): ok [148, 147, 146, 146, 146, 146, 146, 146] error [14855, 14855, 14856, 14856, 14856, 14856, 14856, 14855]
+OUT writes pending at each callback (after reaping completed ones): n=7500 min=0 mean=0 max=15 writes | [-inf,1):7427 [6,8):72 [12,16):1
+callback lag (completion seen minus end of the IN transfer's last microframe): n=7476 min=-204 mean=-84 max=89 us | [-inf,0):7440 [0,50):33 [50,100):3
+OUT lead (bus time of the write's first microframe minus submit time): n=119616 min=743 mean=1834 max=2821 us | [500,750):1 [750,1000):2288 [1000,1500):35464 [1500,2000):33535 [2000,4000):48328
+clicks emitted 56, never detected 56
+
+##### sine-48k-nominal-fb : winusb-gate stream --rate 48000 --d 16 --fb nominal --signal sine --secs 120  (2026-11-22T00:17:16)
+--- result: 120.0 s, process CPU 22.41 s (18.7% of one core) ---
+IN : 119998 transfers, 959984 packets, 5759613 frames (47.997 frames/ms), packet status errors {}, transfer errors {}, submit errors {}, restarts 0, empty packets after stable 0, wait timeouts 0
+IN packet sizes (frames: count): {5: 416, 6: 959443, 7: 125}
+OUT: 960001 writes, 5760048 frames (IN-OUT -435), submit errors {}, transfer errors {87: 958829}, restarts 0, clamped packets 0, wait timeouts 0
+OUT completion by start microframe (mod 8): ok [148, 147, 146, 146, 146, 146, 146, 146] error [119853, 119853, 119854, 119854, 119854, 119854, 119854, 119853]
+OUT writes pending at each callback (after reaping completed ones): n=119998 min=0 mean=0 max=7 writes | [-inf,1):119852 [6,8):146
+callback lag (completion seen minus end of the IN transfer's last microframe): n=119998 min=-202 mean=-66 max=1898 us | [-inf,0):107236 [0,50):12526 [50,100):48 [100,150):10 [150,200):11 [200,300):12 [300,500):26 [500,750):39 [750,1000):19 [1000,2000):71
+OUT lead (bus time of the write's first microframe minus submit time): n=959984 min=-1039 mean=1392 max=1934 us | [-inf,0):400 [0,62):41 [62,125):47 [125,250):89 [250,375):99 [375,500):109 [500,750):245 [750,1000):40685 [1000,1500):571401 [1500,2000):346868
+sine analysis: 0 channels with signal, 0 glitch events in total
+
+##### sine-48k-1ms-in4-d16-5min : winusb-gate stream --rate 48000 --in-pk 8 --in 4 --d 16 --signal sine --secs 300  (2026-11-22T00:19:16)
+--- result: 300.0 s, process CPU 56.38 s (18.8% of one core) ---
+IN : 300000 transfers, 2400000 packets, 14399274 frames (47.997 frames/ms), packet status errors {}, transfer errors {}, submit errors {}, restarts 0, empty packets after stable 0, wait timeouts 0
+IN packet sizes (frames: count): {5: 1047, 6: 2398632, 7: 321}
+OUT: 2400017 writes, 14399418 frames (IN-OUT -144), submit errors {}, transfer errors {87: 2398845}, restarts 0, clamped packets 0, wait timeouts 0
+OUT completion by start microframe (mod 8): ok [148, 147, 146, 146, 146, 146, 146, 146] error [299855, 299855, 299856, 299856, 299856, 299856, 299856, 299855]
+OUT writes pending at each callback (after reaping completed ones): n=300000 min=0 mean=0 max=7 writes | [-inf,1):299854 [6,8):146
+callback lag (completion seen minus end of the IN transfer's last microframe): n=300000 min=-156 mean=-65 max=1694 us | [-inf,0):270806 [0,50):29044 [50,100):72 [100,150):6 [150,200):2 [200,300):5 [300,500):14 [500,750):16 [750,1000):10 [1000,2000):25
+OUT lead (bus time of the write's first microframe minus submit time): n=2400000 min=-948 mean=1393 max=1894 us | [-inf,0):139 [0,62):14 [62,125):17 [125,250):34 [250,375):44 [375,500):44 [500,750):117 [750,1000):96977 [1000,1500):1441805 [1500,2000):860809
+sine analysis: 0 channels with signal, 0 glitch events in total
+
+##### sine-48k-1ms-in2-d16-5min : winusb-gate stream --rate 48000 --in-pk 8 --in 2 --d 16 --signal sine --secs 300  (2026-11-22T00:24:17)
+--- result: 300.0 s, process CPU 54.38 s (18.1% of one core) ---
+IN : 299999 transfers, 2399992 packets, 14399866 frames (47.999 frames/ms), packet status errors {-1073610752: 96}, transfer errors {87: 12}, submit errors {}, restarts 0, empty packets after stable 96, wait timeouts 0
+IN packet sizes (frames: count): {0: 96, 5: 1052, 6: 2397302, 7: 1542}
+OUT: 2400009 writes, 14400586 frames (IN-OUT -720), submit errors {}, transfer errors {87: 2398837}, restarts 0, clamped packets 0, wait timeouts 0
+OUT completion by start microframe (mod 8): ok [148, 147, 146, 146, 146, 146, 146, 146] error [299854, 299854, 299855, 299855, 299855, 299855, 299855, 299854]
+OUT writes pending at each callback (after reaping completed ones): n=299999 min=0 mean=0 max=7 writes | [-inf,1):299853 [6,8):146
+callback lag (completion seen minus end of the IN transfer's last microframe): n=299999 min=-980 mean=-78 max=2117 us | [-inf,0):286485 [0,50):13171 [50,100):35 [100,150):15 [150,200):14 [200,300):32 [300,500):50 [500,750):46 [750,1000):26 [1000,2000):124 [2000,5000):1
+OUT lead (bus time of the write's first microframe minus submit time): n=2399992 min=-1162 mean=1411 max=2720 us | [-inf,0):743 [0,62):71 [62,125):72 [125,250):150 [250,375):159 [375,500):169 [500,750):379 [750,1000):44338 [1000,1500):1438461 [1500,2000):915080 [2000,4000):370
+sine analysis: 0 channels with signal, 0 glitch events in total
+
+##### sine-48k-2ms-in2-d24-5min : winusb-gate stream --rate 48000 --in-pk 16 --in 2 --d 24 --signal sine --secs 300  (2026-11-22T00:29:17)
+--- result: 300.0 s, process CPU 46.72 s (15.6% of one core) ---
+IN : 150000 transfers, 2399992 packets, 14398217 frames (47.994 frames/ms), packet status errors {-1073414144: 168}, transfer errors {31: 21}, submit errors {}, restarts 0, empty packets after stable 168, wait timeouts 0
+IN packet sizes (frames: count): {0: 168, 5: 1060, 6: 2398431, 7: 333}
+OUT: 2400017 writes, 14399417 frames (IN-OUT -1200), submit errors {}, transfer errors {87: 2398845}, restarts 0, clamped packets 0, wait timeouts 0
+OUT completion by start microframe (mod 8): ok [148, 147, 146, 146, 146, 146, 146, 146] error [299855, 299855, 299856, 299856, 299856, 299856, 299856, 299855]
+OUT writes pending at each callback (after reaping completed ones): n=150000 min=0 mean=0 max=14 writes | [-inf,1):149927 [5,6):6 [6,8):66 [12,16):1
+callback lag (completion seen minus end of the IN transfer's last microframe): n=150000 min=-234 mean=-79 max=1931 us | [-inf,0):145828 [0,50):3817 [50,100):82 [100,150):17 [150,200):13 [200,300):33 [300,500):45 [500,750):35 [750,1000):27 [1000,2000):103
+OUT lead (bus time of the write's first microframe minus submit time): n=2399992 min=-1038 mean=1842 max=2845 us | [-inf,0):626 [0,62):87 [62,125):91 [125,250):188 [250,375):220 [375,500):246 [500,750):651 [750,1000):22759 [1000,1500):724424 [1500,2000):651426 [2000,4000):999274
+sine analysis: 0 channels with signal, 0 glitch events in total
+
+##### done 2026-11-22T00:34:18

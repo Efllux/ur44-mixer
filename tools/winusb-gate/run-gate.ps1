@@ -1,5 +1,6 @@
 # Runs the G2 measurement series and appends every result block to results\gate-log.txt.
-# Usage: powershell -ExecutionPolicy Bypass -File run-gate.ps1 [-Set short|long|all]
+# Usage: powershell -ExecutionPolicy Bypass -File run-gate.ps1 [-Set short|long|all|safe48|44k|high]
+# WARNING: the 96/192 kHz runs (set 'high') crashed Windows 10 LTSC 21H2 twice (bugcheck 0x139), see the results doc.
 param([string]$Set = "all")
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $exe = Join-Path $here "target\release\winusb-gate.exe"
@@ -37,6 +38,9 @@ $long = @(
 )
 $runs = @()
 if ($Set -in "short","all") { $runs += $short }
+if ($Set -eq "safe48") { $runs += $short | Where-Object { $_[1] -contains "48000" }; $runs += $long | Where-Object { $_[1] -contains "48000" } }
+if ($Set -eq "high") { $runs += ($short + $long) | Where-Object { ($_[1] -contains "96000") -or ($_[1] -contains "192000") } }
+if ($Set -eq "44k") { $runs += $short | Where-Object { $_[1] -contains "44100" } }
 if ($Set -in "long","all") { $runs += $long }
 foreach ($r in $runs) { Run $r[0] $r[1] }
 Add-Content $log "`n##### done $(Get-Date -Format s)"

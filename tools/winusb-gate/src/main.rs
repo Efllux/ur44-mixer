@@ -35,6 +35,12 @@ fn main() -> Result<()> {
         Some("probe-write") => cmd_probe_write(&args[1..]),
         #[cfg(windows)]
         Some("probe-chain") => cmd_probe_chain(&args[1..]),
+        #[cfg(windows)]
+        Some("probe-reanchor") => cmd_probe_reanchor(&args[1..]),
+        #[cfg(windows)]
+        Some("policy") => cmd_policy(&args[1..]),
+        #[cfg(windows)]
+        Some("capture") => cmd_capture(&args[1..]),
         Some(other) => bail!("unknown command {other}"),
     }
 }
@@ -337,6 +343,275 @@ fn cmd_probe_chain(a: &[String]) -> Result<()> {
     let _ = ifc.set_alt(0);
     if !h.is_null() {
         unsafe { AvRevertMmThreadCharacteristics(h) };
+    }
+    Ok(())
+}
+
+/// Chain of one-packet OUT writes (one microframe each). A plain ASAP chain dies after 1170
+/// writes (WinUSB books a whole frame per write: N - N/8 = 1024). Here every `--every` writes
+/// (a multiple of 8, so on a frame boundary) the write is an explicit-frame WinUsb_WriteIsochPipe
+/// at the frame the chain has reached, which re-anchors the stack's booking.
+#[cfg(windows)]
+fn cmd_probe_reanchor(a: &[String]) -> Result<()> {
+    use windows_sys::Win32::System::Threading::*;
+    let o = Opts(a);
+    let rate: u32 = o.num("--rate", 48000)?;
+    let n: usize = o.num("--n", 40000)?;
+    let every: usize = o.num("--every", 512)?;
+    let depth: usize = o.num("--depth", 24)?;
+    if every % 8 != 0 {
+        bail!("--every must be a multiple of 8");
+    }
+    let (_fin, fout) = formats_for(rate)?;
+    let ifc = winusb::Iface::open(&winusb::GUID_MI01)?;
+    ifc.set_alt(0)?;
+    ifc.set_alt(fout.alt)?;
+    println!("rate read back {}", ifc.set_rate(fout.ep, rate)?);
+    let p = ifc.query_pipe(fout.alt, 0)?;
+    let mbpi = p.MaximumBytesPerInterval;
+    let len = fout.frame_bytes() * (rate / 8000);
+    let mut mem = vec![0u8; (mbpi as usize) * depth];
+    let buf = ifc.register(p.PipeId, &mut mem)?;
+    let name: Vec<u16> = "Pro Audio\0".encode_utf16().collect();
+    let mut task = 0u32;
+    let h = unsafe { AvSetMmThreadCharacteristicsW(name.as_ptr(), &mut task) };
+    let mut ovs: Vec<winusb::Ov> = (0..depth).map(|_| winusb::Ov::new()).collect();
+    let (f0, _) = ifc.frame().ok_or_else(|| anyhow!("no frame"))?;
+    let f0 = f0 + 3;
+    let mut submit_fail = std::collections::BTreeMap::<u32, u64>::new();
+    let mut done_err = std::collections::BTreeMap::<u32, u64>::new();
+    let mut first_err: Option<usize> = None;
+    let mut submit = |i: usize, ovs: &mut Vec<winusb::Ov>| {
+        let s = i % depth;
+        ovs[s].reset();
+        let off = s as u32 * mbpi;
+        let r = if i % every == 0 {
+            let mut fr = f0 + (i / 8) as u32;
+            buf.write_at(off, len, &mut fr, &ovs[s].ov)
+        } else {
+            buf.write_asap(off, len, true, &ovs[s].ov)
+        };
+        if let Err(e) = r {
+            *submit_fail.entry(e).or_insert(0) += 1;
+        }
+    };
+    for i in 0..depth.min(n) {
+        submit(i, &mut ovs);
+    }
+    let t0 = std::time::Instant::now();
+    for i in 0..n {
+        let s = i % depth;
+        unsafe { WaitForSingleObject(ovs[s].event(), 1000) };
+        if let Err(e) = ifc.overlapped_result(&ovs[s].ov, true) {
+            *done_err.entry(e).or_insert(0) += 1;
+            first_err.get_or_insert(i);
+        }
+        if i + depth < n {
+            submit(i + depth, &mut ovs);
+        }
+    }
+    let el = t0.elapsed().as_secs_f64();
+    let (f1, _) = ifc.frame().unwrap_or((0, 0));
+    println!(
+        "{n} one-packet writes, explicit-frame re-anchor every {every}: {el:.3} s ({:.4} ms per write, ideal 0.125), bus frames {} (ideal {}), submit failures {submit_fail:?}, completion errors {done_err:?}, first error at #{first_err:?}",
+        el * 1000.0 / n as f64, f1.wrapping_sub(f0), n / 8
+    );
+    drop(buf);
+    let _ = ifc.set_alt(0);
+    if !h.is_null() {
+        unsafe { AvRevertMmThreadCharacteristics(h) };
+    }
+    Ok(())
+}
+
+/// Capture-only clock measurement at 48 kHz. IN reads of `--pk` packets (multiple of 8), `--in`
+/// in flight (at least 8 ms), ASAP start (no explicit frame), ContinueStream. No OUT transfers.
+/// Stops at the first non-zero packet status or transfer error (late / not accessed).
+/// Reports the device's frames per ms against the USB frame clock and how often a host feeding a
+/// constant 48 frames per ms would slip.
+#[cfg(windows)]
+fn cmd_capture(a: &[String]) -> Result<()> {
+    use windows_sys::Win32::Devices::Usb::USBD_ISO_PACKET_DESCRIPTOR;
+    use windows_sys::Win32::System::Threading::*;
+    let o = Opts(a);
+    let secs: f64 = o.num("--secs", 2.0)?;
+    let pk: usize = o.num("--pk", 8)?;
+    let k: usize = o.num("--in", 16)?;
+    if pk == 0 || pk % 8 != 0 || pk * k < 64 {
+        bail!("--pk must be a multiple of 8 and --pk x --in >= 64 packets (8 ms)");
+    }
+    let rate = 48000u32;
+    let (fin, _) = formats_for(rate)?;
+    let ifc = winusb::Iface::open(&winusb::GUID_MI02)?;
+    ifc.set_alt(0)?;
+    ifc.set_alt(fin.alt)?;
+    let rb = ifc.set_rate(fin.ep, rate)?;
+    if rb != rate {
+        bail!("rate read back {rb}");
+    }
+    let p = ifc.query_pipe(fin.alt, 0)?;
+    let mbpi = p.MaximumBytesPerInterval as usize;
+    let slot = pk * mbpi;
+    let mut mem = vec![0u8; slot * k];
+    let buf = ifc.register(p.PipeId, &mut mem)?;
+    let base = mem.as_ptr();
+    let name: Vec<u16> = "Pro Audio\0".encode_utf16().collect();
+    let mut task = 0u32;
+    let h = unsafe { AvSetMmThreadCharacteristicsW(name.as_ptr(), &mut task) };
+    if !h.is_null() {
+        unsafe { AvSetMmThreadPriority(h, AVRT_PRIORITY_CRITICAL) };
+    }
+    let mut ovs: Vec<winusb::Ov> = (0..k).map(|_| winusb::Ov::new()).collect();
+    let mut descs: Vec<Vec<USBD_ISO_PACKET_DESCRIPTOR>> = (0..k).map(|_| vec![USBD_ISO_PACKET_DESCRIPTOR { Offset: 0, Length: 0, Status: 0 }; pk]).collect();
+    let f_start = ifc.frame().map(|f| f.0).unwrap_or(0);
+    for s in 0..k {
+        ovs[s].reset();
+        if let Err(e) = buf.read_asap((s * slot) as u32, slot as u32, s > 0, &mut descs[s], &ovs[s].ov) {
+            bail!("submit {s} failed: {e}");
+        }
+    }
+    let freq = {
+        let mut f = 0i64;
+        unsafe { windows_sys::Win32::System::Performance::QueryPerformanceFrequency(&mut f) };
+        f as f64
+    };
+    let qpc = || {
+        let mut t = 0i64;
+        unsafe { windows_sys::Win32::System::Performance::QueryPerformanceCounter(&mut t) };
+        t
+    };
+    let t0 = qpc();
+    let mut hist = std::collections::BTreeMap::<u32, u64>::new();
+    let (mut frames, mut packets, mut xfers) = (0u64, 0u64, 0u64);
+    let mut stop: Option<String> = None;
+    let mut warm = 0u64; // packets before the first non-empty one (stream start)
+    let mut started = false;
+    // Running sum of (frames - 6) per microframe from the first data packet = device-vs-USB-clock offset.
+    let mut acc: i64 = 0;
+    let (mut acc_min, mut acc_max) = (0i64, 0i64);
+    let mut odd_pos: Vec<u64> = Vec::new(); // packet index (after start) of each non-6 packet
+    let mut peak = [0f32; 6];
+    let mut i = 0usize;
+    while (qpc() - t0) as f64 / freq < secs {
+        let s = i % k;
+        if unsafe { WaitForSingleObject(ovs[s].event(), 200) } != windows_sys::Win32::Foundation::WAIT_OBJECT_0 {
+            stop = Some("IN read did not complete within 200 ms".into());
+            break;
+        }
+        if let Err(e) = ifc.overlapped_result(&ovs[s].ov, true) {
+            stop = Some(format!("transfer error {e} at transfer {xfers}"));
+            break;
+        }
+        xfers += 1;
+        for (j, d) in descs[s].iter().enumerate() {
+            packets += 1;
+            if d.Status != 0 {
+                stop = Some(format!("packet status {:#x} at transfer {xfers} packet {j}", d.Status as u32));
+                break;
+            }
+            let n = d.Length / 18;
+            if !started {
+                if n == 0 {
+                    warm += 1;
+                    continue;
+                }
+                started = true;
+            }
+            *hist.entry(n).or_insert(0) += 1;
+            frames += n as u64;
+            acc += n as i64 - 6;
+            acc_min = acc_min.min(acc);
+            acc_max = acc_max.max(acc);
+            if n != 6 {
+                odd_pos.push(packets - warm);
+            }
+            let pkt = unsafe { std::slice::from_raw_parts(base.add(s * slot + d.Offset as usize), d.Length as usize) };
+            for f in pkt.chunks_exact(18) {
+                for c in 0..6 {
+                    let v = ((f[c * 3] as u32) << 8 | (f[c * 3 + 1] as u32) << 16 | (f[c * 3 + 2] as u32) << 24) as i32 >> 8;
+                    peak[c] = peak[c].max((v as f32 / 8388608.0).abs());
+                }
+            }
+        }
+        if stop.is_some() {
+            break;
+        }
+        ovs[s].reset();
+        if let Err(e) = buf.read_asap((s * slot) as u32, slot as u32, true, &mut descs[s], &ovs[s].ov) {
+            stop = Some(format!("resubmit failed: error {e}"));
+            break;
+        }
+        i += 1;
+    }
+    let el = (qpc() - t0) as f64 / freq;
+    // Drain: wait for every pending read (all whole-frame) before unregistering.
+    for s in 0..k {
+        unsafe { WaitForSingleObject(ovs[s].event(), 500) };
+        let _ = ifc.overlapped_result(&ovs[s].ov, false);
+    }
+    let f_end = ifc.frame().map(|f| f.0).unwrap_or(0);
+    drop(buf);
+    let _ = ifc.set_alt(0);
+    if !h.is_null() {
+        unsafe { AvRevertMmThreadCharacteristics(h) };
+    }
+    let data_pk = packets - warm;
+    let ppm = if data_pk > 0 { (frames as f64 / (data_pk as f64 * 6.0) - 1.0) * 1e6 } else { 0.0 };
+    println!("capture 48 kHz: {el:.2} s, {xfers} transfers x {pk} packets, {k} in flight ({} ms), bus frames {}", pk * k / 8, f_end.wrapping_sub(f_start));
+    println!("  stop reason: {}", stop.as_deref().unwrap_or("none (ran to the end)"));
+    println!("  start: {warm} empty packets before the first data; then {data_pk} packets, {frames} frames");
+    println!("  packet sizes (frames: count): {hist:?}");
+    println!("  device clock vs USB frame clock: {:.4} frames/ms = {ppm:+.1} ppm", frames as f64 / data_pk.max(1) as f64 * 8.0);
+    println!("  running offset sum(frames - 6) range [{acc_min}, {acc_max}], final {acc}");
+    let gaps: Vec<u64> = odd_pos.windows(2).map(|w| w[1] - w[0]).collect();
+    if !gaps.is_empty() {
+        let mean = gaps.iter().sum::<u64>() as f64 / gaps.len() as f64 / 8.0;
+        println!(
+            "  non-6 packets: {}; spacing min {:.1} / mean {mean:.1} / max {:.1} ms",
+            odd_pos.len(), *gaps.iter().min().unwrap() as f64 / 8.0, *gaps.iter().max().unwrap() as f64 / 8.0
+        );
+    }
+    if ppm.abs() > 0.0 && data_pk > 0 {
+        println!("  a constant 48 frames/ms feed drifts by one frame every {:.2} s", 1.0 / (ppm.abs() * 1e-6 * 48000.0));
+    }
+    println!("  input peaks (ch1..6): {:?}", peak.iter().map(|p| format!("{p:.4}")).collect::<Vec<_>>());
+    if let Some(path) = o.get("--log") {
+        use std::io::Write;
+        let mut f = std::fs::OpenOptions::new().create(true).append(true).open(path)?;
+        writeln!(f, "\n=== winusb-gate capture {} ({}) === {el:.2} s, stop: {}, warm {warm}, packets {data_pk}, frames {frames}, hist {hist:?}, {ppm:+.1} ppm, offset [{acc_min},{acc_max}] final {acc}, non-6 {}",
+            a.join(" "), std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0), stop.as_deref().unwrap_or("none"), odd_pos.len())?;
+    }
+    Ok(())
+}
+
+/// Pipe-policy probe only: Get/SetPipePolicy for the ISO policies on the 48 kHz OUT and IN pipes.
+/// Submits no isoch transfer at all.
+#[cfg(windows)]
+fn cmd_policy(a: &[String]) -> Result<()> {
+    let o = Opts(a);
+    let rate: u32 = o.num("--rate", 48000)?;
+    if rate != 48000 {
+        bail!("48 kHz only on this PC");
+    }
+    let (fin, fout) = formats_for(rate)?;
+    for (name, guid, f) in [("OUT", winusb::GUID_MI01, fout), ("IN", winusb::GUID_MI02, fin)] {
+        let ifc = winusb::Iface::open(&guid)?;
+        ifc.set_alt(0)?;
+        ifc.set_alt(f.alt)?;
+        let p = ifc.query_pipe(f.alt, 0)?;
+        println!("{name} pipe 0x{:02x} alt {}: MaximumBytesPerInterval {}, Interval {}, wMaxPacketSize {}", p.PipeId, f.alt, p.MaximumBytesPerInterval, p.Interval, p.MaximumPacketSize);
+        for (pn, pol) in [("ISO_START_LATENCY", winusb::ISO_START_LATENCY), ("ISO_ALWAYS_START_ASAP", winusb::ISO_ALWAYS_START_ASAP), ("ISO_NUM_FIXED_PACKETS", winusb::ISO_NUM_FIXED_PACKETS)] {
+            let before = ifc.get_pipe_policy(p.PipeId, pol);
+            let sets: Vec<String> = [&[8u8][..], &[8, 0], &[8, 0, 0, 0]]
+                .iter()
+                .map(|v| format!("{}B:{:?}", v.len(), ifc.set_pipe_policy_raw(p.PipeId, pol, v)))
+                .collect();
+            let after = ifc.get_pipe_policy(p.PipeId, pol);
+            println!("  {pn} (0x{pol:x}): get before {before:?}; set 8 as {}; get after {after:?}", sets.join(" "));
+        }
+        // Well-known WinUSB policies for comparison (MAXIMUM_TRANSFER_SIZE 0x08, RAW_IO 0x07).
+        println!("  MAXIMUM_TRANSFER_SIZE get {:?}, RAW_IO get {:?}", ifc.get_pipe_policy(p.PipeId, 0x08), ifc.get_pipe_policy(p.PipeId, 0x07));
+        let _ = ifc.set_alt(0);
     }
     Ok(())
 }

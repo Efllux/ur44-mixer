@@ -1,0 +1,8 @@
+
+=== winusb-gate capture --secs 2 --log results\fixed-packets-log.txt (1795343974) === 2.00 s, stop: none, warm 0, packets 15968, frames 95803, hist {5: 7, 6: 15959, 7: 2}, -52.2 ppm, offset [-5,0] final -5, non-6 9
+
+=== winusb-gate capture --secs 10 --log results\fixed-packets-log.txt (1795343990) === 10.00 s, stop: none, warm 0, packets 79968, frames 479784, hist {5: 32, 6: 79928, 7: 8}, -50.0 ppm, offset [-24,0] final -24, non-6 40
+
+=== winusb-gate capture --secs 60 --log results\fixed-packets-log.txt (1795344055) === 60.00 s, stop: none, warm 0, packets 479968, frames 2879664, hist {5: 192, 6: 479728, 7: 48}, -50.0 ppm, offset [-144,0] final -144, non-6 240
+
+=== winusb-gate capture --secs 300 --log results\fixed-packets-log.txt (1795344361) === 300.00 s, stop: none, warm 0, packets 2399976, frames 14399137, hist {5: 1018, 6: 2398659, 7: 299}, -49.9 ppm, offset [-719,0] final -719, non-6 1317

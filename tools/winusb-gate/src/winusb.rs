@@ -179,12 +179,27 @@ impl Iface {
         Ok(())
     }
 
+    /// Registers `buf` for isoch transfers on `pipe`. The pipe's MaximumBytesPerInterval is read
+    /// here so the safety guard can compute the packet count WinUSB will build for each write.
     pub fn register(&self, pipe: u8, buf: &mut [u8]) -> Result<IsochBuffer> {
+        let mut mbpi = 0u32;
+        for i in 0..2u8 {
+            let mut alt = 0u8;
+            unsafe { WinUsb_GetCurrentAlternateSetting(self.wu, &mut alt) };
+            if let Ok(p) = self.query_pipe(alt, i) {
+                if p.PipeId == pipe {
+                    mbpi = p.MaximumBytesPerInterval;
+                }
+            }
+        }
+        if mbpi == 0 {
+            bail!("register: cannot find MaximumBytesPerInterval of pipe {pipe:#x}");
+        }
         let mut h = null_mut();
         if unsafe { WinUsb_RegisterIsochBuffer(self.wu, pipe, buf.as_mut_ptr(), buf.len() as u32, &mut h) } == 0 {
             bail!("RegisterIsochBuffer failed: {}", last_error());
         }
-        Ok(IsochBuffer { h })
+        Ok(IsochBuffer { h, mbpi, submitted: std::cell::Cell::new(false) })
     }
 
     /// Current 1 ms frame number and its QPC time.
@@ -236,11 +251,38 @@ impl Drop for Iface {
 
 pub struct IsochBuffer {
     h: *mut core::ffi::c_void,
+    mbpi: u32,
+    submitted: std::cell::Cell<bool>,
+}
+
+/// SAFETY GUARD (see docs/winusb-gate-results.md, crashes 0x139/0xD1). An isoch transfer of fewer
+/// than 8 packets (less than one 1 ms frame on these bInterval = 1 endpoints) that completes late
+/// makes the in-box stack write 8 packet statuses past the end of the URB and corrupts kernel
+/// memory. Every IN and OUT transfer must therefore be a non-zero multiple of 8 packets. A
+/// violation terminates the process *before* the transfer is submitted; pending whole-frame
+/// transfers are then cancelled by the handle close, which is safe.
+fn guard_packets(what: &str, packets: u32, len: u32) {
+    if packets == 0 || packets % 8 != 0 {
+        eprintln!("SAFETY GUARD: refusing {what} of {len} bytes = {packets} packets (not a non-zero multiple of 8); exiting before submit");
+        std::process::exit(3);
+    }
 }
 
 impl IsochBuffer {
+    /// Packets WinUSB builds for an OUT write: it slices the buffer into full
+    /// MaximumBytesPerInterval packets (measured, results doc section 5). ISO_NUM_FIXED_PACKETS is
+    /// a libusbK policy and is not trusted to change this.
+    fn write_packets(&self, len: u32) -> u32 {
+        len.div_ceil(self.mbpi)
+    }
+
     /// Returns Ok(()) when the transfer is pending, Err(code) otherwise.
     pub fn read_asap(&self, off: u32, len: u32, cont: bool, desc: &mut [USBD_ISO_PACKET_DESCRIPTOR], ov: &OVERLAPPED) -> Result<(), u32> {
+        guard_packets("IN read (ASAP)", desc.len() as u32, len);
+        if len != desc.len() as u32 * self.mbpi {
+            guard_packets("IN read with a length that is not packets x MBPI", 0, len);
+        }
+        self.submitted.set(true);
         let ok = unsafe { WinUsb_ReadIsochPipeAsap(self.h, off, len, cont as BOOL, desc.len() as u32, desc.as_mut_ptr(), ov) };
         let e = last_error();
         if ok != 0 || e == ERROR_IO_PENDING {
@@ -251,6 +293,8 @@ impl IsochBuffer {
     }
 
     pub fn write_asap(&self, off: u32, len: u32, cont: bool, ov: &OVERLAPPED) -> Result<(), u32> {
+        guard_packets("OUT write (ASAP)", self.write_packets(len), len);
+        self.submitted.set(true);
         let ok = unsafe { WinUsb_WriteIsochPipeAsap(self.h, off, len, cont as BOOL, ov) };
         let e = last_error();
         if ok != 0 || e == ERROR_IO_PENDING {
@@ -261,7 +305,19 @@ impl IsochBuffer {
     }
 
     /// Explicit-frame write: `frame` is the start frame; on return it holds the frame after the transfer.
+    /// Explicit-frame transfers are only allowed as the very first transfer on a buffer, i.e.
+    /// never while other transfers may be pending on the pipe (crash #3).
+    fn guard_explicit(&self, what: &str) {
+        if self.submitted.get() {
+            eprintln!("SAFETY GUARD: refusing explicit-frame {what} after other transfers were submitted on this pipe; exiting");
+            std::process::exit(3);
+        }
+    }
+
     pub fn write_at(&self, off: u32, len: u32, frame: &mut u32, ov: &OVERLAPPED) -> Result<(), u32> {
+        guard_packets("OUT write (explicit frame)", self.write_packets(len), len);
+        self.guard_explicit("OUT write");
+        self.submitted.set(true);
         let ok = unsafe { WinUsb_WriteIsochPipe(self.h, off, len, frame, ov) };
         let e = last_error();
         if ok != 0 || e == ERROR_IO_PENDING {
@@ -272,6 +328,12 @@ impl IsochBuffer {
     }
 
     pub fn read_at(&self, off: u32, len: u32, frame: &mut u32, desc: &mut [USBD_ISO_PACKET_DESCRIPTOR], ov: &OVERLAPPED) -> Result<(), u32> {
+        guard_packets("IN read (explicit frame)", desc.len() as u32, len);
+        if len != desc.len() as u32 * self.mbpi {
+            guard_packets("IN read with a length that is not packets x MBPI", 0, len);
+        }
+        self.guard_explicit("IN read");
+        self.submitted.set(true);
         let ok = unsafe { WinUsb_ReadIsochPipe(self.h, off, len, frame, desc.len() as u32, desc.as_mut_ptr(), ov) };
         let e = last_error();
         if ok != 0 || e == ERROR_IO_PENDING {
