@@ -1,0 +1,12 @@
+{
+  "tool": "vboxusb-gate calibrate",
+  "validate_secs": 300,
+  "load": false,
+  "margin_steps": 1,
+  "loopback_channel": 1,
+  "rates": [
+    {"rate": 48000, "stable": true, "step": 4, "out_depth": 4, "min_queue": 3, "write_lead": 1, "write_delay_us": 200, "rt_median_ms": 1.778, "rt_max_ms": 1.786, "wire_ms": 0.604, "headroom_steps": 2},
+    {"rate": 96000, "stable": true, "step": 6, "out_depth": 4, "min_queue": 3, "write_lead": 1, "write_delay_us": 600, "rt_median_ms": 1.381, "rt_max_ms": 1.390, "wire_ms": 0.552, "headroom_steps": 1},
+    {"rate": 192000, "stable": true, "step": 0, "out_depth": 8, "min_queue": 4, "write_lead": 0, "write_delay_us": 0, "rt_median_ms": 7.865, "rt_max_ms": 8.007, "wire_ms": 0.526, "headroom_steps": 1}
+  ]
+}

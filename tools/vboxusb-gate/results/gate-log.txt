@@ -160,3 +160,491 @@ phase blocks=588 span_samples=0.0004 drift_first_to_last_samples=0.0001 jumps_gt
 RESULT ok
 exit=0
 events since 2026-11-22T21:59:29: 0 error/warning (DCOM/DNS/Time ignored), 0 crash markers (41/1001/6008)
+
+##### click-d4-wl3 : vboxusb-gate stream --mode click --secs 10 --amp 0.8 --thr 0.005 --out-depth 4 --in-depth 8 --write-lead 3  (2026-11-22T22:16:30)
+stream mode=click secs=10 freq=1000 amp=0.8 in_depth=8 out_depth=4 in_ch=0
+vboxusb_version=5.0
+desc if1 alt1 ep=0x07 attr=0x05 wMaxPacketSize=126 bInterval=1
+desc if2 alt1 ep=0x86 attr=0x05 wMaxPacketSize=126 bInterval=1
+rate_readback in=48000 out=48000
+elapsed_s=10.010 in_urbs=10006 out_urbs=9900 in_frames=480263 out_frames=475176
+in_hist_frames_per_packet 0..7 = [0, 0, 0, 0, 0, 35, 80003, 10]
+frames_per_ms=47.9975 ppm_vs_usb=-52.1
+empty_in_packets before_out=0 after_out=0
+min_live_ms in=8 out=4 max_wake_gap_ms=1.12 out_started=true out_start_in_frame=4800
+start_frame_offset_out_minus_in_ms=102 (median completion-time difference)
+clicks found=39 missed=0 app_rt_ms min=4.814 median=4.892 max=4.980
+wire_rt_ms (OUT microframe -> IN microframe) min=1.417 median=1.417 max=1.417
+late_write lead_pos=3 write_to_completion_ms min=3.013 median=3.962 (completion ~= end of its frame)
+RESULT ok
+exit=0
+events since 2026-11-22T22:16:25: 0 error/warning (DCOM/DNS/Time ignored), 0 crash markers (41/1001/6008)
+
+##### click-d4-wl2 : vboxusb-gate stream --mode click --secs 10 --amp 0.8 --thr 0.005 --out-depth 4 --in-depth 8 --write-lead 2  (2026-11-22T22:16:44)
+stream mode=click secs=10 freq=1000 amp=0.8 in_depth=8 out_depth=4 in_ch=0
+vboxusb_version=5.0
+desc if1 alt1 ep=0x07 attr=0x05 wMaxPacketSize=126 bInterval=1
+desc if2 alt1 ep=0x86 attr=0x05 wMaxPacketSize=126 bInterval=1
+rate_readback in=48000 out=48000
+elapsed_s=10.009 in_urbs=10006 out_urbs=9900 in_frames=480263 out_frames=475176
+in_hist_frames_per_packet 0..7 = [0, 0, 0, 0, 0, 37, 79999, 12]
+frames_per_ms=47.9975 ppm_vs_usb=-52.1
+empty_in_packets before_out=0 after_out=0
+min_live_ms in=8 out=4 max_wake_gap_ms=1.13 out_started=true out_start_in_frame=4799
+start_frame_offset_out_minus_in_ms=102 (median completion-time difference)
+clicks found=39 missed=0 app_rt_ms min=3.849 median=3.926 max=4.022
+wire_rt_ms (OUT microframe -> IN microframe) min=1.417 median=1.417 max=1.438
+late_write lead_pos=2 write_to_completion_ms min=2.714 median=2.970 (completion ~= end of its frame)
+RESULT ok
+exit=0
+events since 2026-11-22T22:16:39: 0 error/warning (DCOM/DNS/Time ignored), 0 crash markers (41/1001/6008)
+
+##### click-d4-wl1 : vboxusb-gate stream --mode click --secs 10 --amp 0.8 --thr 0.005 --out-depth 4 --in-depth 8 --write-lead 1  (2026-11-22T22:16:54)
+stream mode=click secs=10 freq=1000 amp=0.8 in_depth=8 out_depth=4 in_ch=0
+vboxusb_version=5.0
+desc if1 alt1 ep=0x07 attr=0x05 wMaxPacketSize=126 bInterval=1
+desc if2 alt1 ep=0x86 attr=0x05 wMaxPacketSize=126 bInterval=1
+rate_readback in=48000 out=48000
+elapsed_s=10.009 in_urbs=10006 out_urbs=9900 in_frames=480264 out_frames=475176
+in_hist_frames_per_packet 0..7 = [0, 0, 0, 0, 0, 35, 80002, 11]
+frames_per_ms=47.9976 ppm_vs_usb=-50.0
+empty_in_packets before_out=0 after_out=0
+min_live_ms in=8 out=4 max_wake_gap_ms=1.12 out_started=true out_start_in_frame=4800
+start_frame_offset_out_minus_in_ms=102 (median completion-time difference)
+clicks found=39 missed=0 app_rt_ms min=2.679 median=2.898 max=2.969
+wire_rt_ms (OUT microframe -> IN microframe) min=1.417 median=1.417 max=1.438
+late_write lead_pos=1 write_to_completion_ms min=1.613 median=1.966 (completion ~= end of its frame)
+RESULT ok
+exit=0
+events since 2026-11-22T22:16:49: 0 error/warning (DCOM/DNS/Time ignored), 0 crash markers (41/1001/6008)
+
+##### click-d4-wl1-delay300 : vboxusb-gate stream --mode click --secs 10 --amp 0.8 --thr 0.005 --out-depth 4 --in-depth 8 --write-lead 1 --write-delay-us 300  (2026-11-22T22:17:35)
+stream mode=click secs=10 freq=1000 amp=0.8 in_depth=8 out_depth=4 in_ch=0
+vboxusb_version=5.0
+desc if1 alt1 ep=0x07 attr=0x05 wMaxPacketSize=126 bInterval=1
+desc if2 alt1 ep=0x86 attr=0x05 wMaxPacketSize=126 bInterval=1
+rate_readback in=48000 out=48000
+elapsed_s=10.009 in_urbs=10006 out_urbs=9900 in_frames=480263 out_frames=475176
+in_hist_frames_per_packet 0..7 = [0, 0, 0, 0, 0, 39, 79995, 14]
+frames_per_ms=47.9975 ppm_vs_usb=-52.1
+empty_in_packets before_out=0 after_out=0
+min_live_ms in=8 out=4 max_wake_gap_ms=1.09 out_started=true out_start_in_frame=4799
+start_frame_offset_out_minus_in_ms=102 (median completion-time difference)
+clicks found=39 missed=0 app_rt_ms min=2.565 median=2.659 max=2.750
+wire_rt_ms (OUT microframe -> IN microframe) min=1.417 median=1.417 max=1.438
+late_write lead_pos=1 write_to_completion_ms min=1.549 median=1.699 (completion ~= end of its frame)
+RESULT ok
+exit=0
+events since 2026-11-22T22:17:30: 0 error/warning (DCOM/DNS/Time ignored), 0 crash markers (41/1001/6008)
+
+##### click-d4-wl1-delay500 : vboxusb-gate stream --mode click --secs 10 --amp 0.8 --thr 0.005 --out-depth 4 --in-depth 8 --write-lead 1 --write-delay-us 500  (2026-11-22T22:17:45)
+stream mode=click secs=10 freq=1000 amp=0.8 in_depth=8 out_depth=4 in_ch=0
+vboxusb_version=5.0
+desc if1 alt1 ep=0x07 attr=0x05 wMaxPacketSize=126 bInterval=1
+desc if2 alt1 ep=0x86 attr=0x05 wMaxPacketSize=126 bInterval=1
+rate_readback in=48000 out=48000
+elapsed_s=10.009 in_urbs=10006 out_urbs=9900 in_frames=480264 out_frames=475176
+in_hist_frames_per_packet 0..7 = [0, 0, 0, 0, 0, 37, 79998, 13]
+frames_per_ms=47.9976 ppm_vs_usb=-50.0
+empty_in_packets before_out=0 after_out=0
+min_live_ms in=8 out=4 max_wake_gap_ms=1.08 out_started=true out_start_in_frame=4800
+start_frame_offset_out_minus_in_ms=102 (median completion-time difference)
+clicks found=39 missed=0 app_rt_ms min=2.380 median=2.482 max=2.502
+wire_rt_ms (OUT microframe -> IN microframe) min=1.417 median=1.417 max=1.438
+late_write lead_pos=1 write_to_completion_ms min=1.376 median=1.499 (completion ~= end of its frame)
+RESULT ok
+exit=0
+events since 2026-11-22T22:17:40: 0 error/warning (DCOM/DNS/Time ignored), 0 crash markers (41/1001/6008)
+
+##### click-d4-wl1-delay700 : vboxusb-gate stream --mode click --secs 10 --amp 0.8 --thr 0.005 --out-depth 4 --in-depth 8 --write-lead 1 --write-delay-us 700  (2026-11-22T22:17:55)
+stream mode=click secs=10 freq=1000 amp=0.8 in_depth=8 out_depth=4 in_ch=0
+vboxusb_version=5.0
+desc if1 alt1 ep=0x07 attr=0x05 wMaxPacketSize=126 bInterval=1
+desc if2 alt1 ep=0x86 attr=0x05 wMaxPacketSize=126 bInterval=1
+rate_readback in=48000 out=48000
+elapsed_s=10.009 in_urbs=10006 out_urbs=9900 in_frames=480263 out_frames=475176
+in_hist_frames_per_packet 0..7 = [0, 0, 0, 0, 0, 35, 80003, 10]
+frames_per_ms=47.9975 ppm_vs_usb=-52.1
+empty_in_packets before_out=0 after_out=0
+min_live_ms in=8 out=4 max_wake_gap_ms=1.11 out_started=true out_start_in_frame=4799
+start_frame_offset_out_minus_in_ms=102 (median completion-time difference)
+clicks found=39 missed=0 app_rt_ms min=2.246 median=2.282 max=2.306
+wire_rt_ms (OUT microframe -> IN microframe) min=1.417 median=1.417 max=1.438
+late_write lead_pos=1 write_to_completion_ms min=1.156 median=1.299 (completion ~= end of its frame)
+RESULT ok
+exit=0
+events since 2026-11-22T22:17:50: 0 error/warning (DCOM/DNS/Time ignored), 0 crash markers (41/1001/6008)
+
+##### click-d4-wl1-delay850 : vboxusb-gate stream --mode click --secs 10 --amp 0.8 --thr 0.005 --out-depth 4 --in-depth 8 --write-lead 1 --write-delay-us 850  (2026-11-22T22:18:10)
+stream mode=click secs=10 freq=1000 amp=0.8 in_depth=8 out_depth=4 in_ch=0
+vboxusb_version=5.0
+desc if1 alt1 ep=0x07 attr=0x05 wMaxPacketSize=126 bInterval=1
+desc if2 alt1 ep=0x86 attr=0x05 wMaxPacketSize=126 bInterval=1
+rate_readback in=48000 out=48000
+elapsed_s=10.008 in_urbs=10006 out_urbs=9900 in_frames=480264 out_frames=475176
+in_hist_frames_per_packet 0..7 = [0, 0, 0, 0, 0, 36, 80000, 12]
+frames_per_ms=47.9976 ppm_vs_usb=-50.0
+empty_in_packets before_out=0 after_out=0
+min_live_ms in=8 out=4 max_wake_gap_ms=1.07 out_started=true out_start_in_frame=4800
+start_frame_offset_out_minus_in_ms=102 (median completion-time difference)
+clicks found=39 missed=0 app_rt_ms min=2.078 median=2.133 max=2.147
+wire_rt_ms (OUT microframe -> IN microframe) min=1.417 median=1.417 max=1.438
+late_write lead_pos=1 write_to_completion_ms min=1.064 median=1.149 (completion ~= end of its frame)
+RESULT ok
+exit=0
+events since 2026-11-22T22:18:05: 0 error/warning (DCOM/DNS/Time ignored), 0 crash markers (41/1001/6008)
+
+##### click-d4-wl1-delay950 : vboxusb-gate stream --mode click --secs 10 --amp 0.8 --thr 0.005 --out-depth 4 --in-depth 8 --write-lead 1 --write-delay-us 950  (2026-11-22T22:18:20)
+stream mode=click secs=10 freq=1000 amp=0.8 in_depth=8 out_depth=4 in_ch=0
+vboxusb_version=5.0
+desc if1 alt1 ep=0x07 attr=0x05 wMaxPacketSize=126 bInterval=1
+desc if2 alt1 ep=0x86 attr=0x05 wMaxPacketSize=126 bInterval=1
+rate_readback in=48000 out=48000
+elapsed_s=10.009 in_urbs=10006 out_urbs=9900 in_frames=480263 out_frames=475176
+in_hist_frames_per_packet 0..7 = [0, 0, 0, 0, 0, 33, 80007, 8]
+frames_per_ms=47.9975 ppm_vs_usb=-52.1
+empty_in_packets before_out=0 after_out=0
+min_live_ms in=8 out=4 max_wake_gap_ms=1.10 out_started=true out_start_in_frame=4800
+start_frame_offset_out_minus_in_ms=102 (median completion-time difference)
+clicks found=39 missed=0 app_rt_ms min=1.980 median=2.040 max=2.079
+wire_rt_ms (OUT microframe -> IN microframe) min=1.417 median=1.417 max=1.438
+late_write lead_pos=1 write_to_completion_ms min=0.973 median=1.048 (completion ~= end of its frame)
+RESULT ok
+exit=0
+events since 2026-11-22T22:18:15: 0 error/warning (DCOM/DNS/Time ignored), 0 crash markers (41/1001/6008)
+
+##### sine-60s-d4-wl1-delay850 : vboxusb-gate stream --mode sine --secs 60 --amp 0.8 --out-depth 4 --in-depth 8 --write-lead 1 --write-delay-us 850  (2026-11-22T22:18:46)
+stream mode=sine secs=60 freq=1000 amp=0.8 in_depth=8 out_depth=4 in_ch=0
+vboxusb_version=5.0
+desc if1 alt1 ep=0x07 attr=0x05 wMaxPacketSize=126 bInterval=1
+desc if2 alt1 ep=0x86 attr=0x05 wMaxPacketSize=126 bInterval=1
+rate_readback in=48000 out=48000
+elapsed_s=52.896 in_urbs=52894 out_urbs=52786 in_frames=2538784 out_frames=2533600
+in_hist_frames_per_packet 0..7 = [0, 0, 0, 0, 0, 182, 422916, 54]
+frames_per_ms=47.9976 ppm_vs_usb=-50.4
+empty_in_packets before_out=0 after_out=0
+min_live_ms in=8 out=3 max_wake_gap_ms=2.04 out_started=true out_start_in_frame=4800
+start_frame_offset_out_minus_in_ms=102 (median completion-time difference)
+sine peak=0.0664 (-23.6 dBFS) glitches=1 max_err_rel=0.8622 first_glitches=[2538462]
+phase blocks=517 span_samples=0.0004 drift_first_to_last_samples=0.0001 jumps_gt_2deg=0 amp_min=0.0646 amp_max=0.0646
+late_write lead_pos=1 write_to_completion_ms min=0.963 median=1.147 (completion ~= end of its frame)
+STOP safety: OUT queue fell to 3 ms (< 4)
+exit=2
+events since 2026-11-22T22:18:41: 0 error/warning (DCOM/DNS/Time ignored), 0 crash markers (41/1001/6008)
+
+##### sine-60s-d4-mq3-wl1-delay700 : vboxusb-gate stream --mode sine --secs 60 --amp 0.8 --out-depth 4 --in-depth 8 --min-queue 3 --write-lead 1 --write-delay-us 700  (2026-11-22T22:19:49)
+stream mode=sine secs=60 freq=1000 amp=0.8 in_depth=8 out_depth=4 in_ch=0
+vboxusb_version=5.0
+desc if1 alt1 ep=0x07 attr=0x05 wMaxPacketSize=126 bInterval=1
+desc if2 alt1 ep=0x86 attr=0x05 wMaxPacketSize=126 bInterval=1
+rate_readback in=48000 out=48000
+elapsed_s=60.009 in_urbs=60007 out_urbs=59901 in_frames=2880190 out_frames=2875102
+in_hist_frames_per_packet 0..7 = [0, 0, 0, 0, 0, 208, 479786, 62]
+frames_per_ms=47.9976 ppm_vs_usb=-50.7
+empty_in_packets before_out=0 after_out=0
+min_live_ms in=8 out=4 max_wake_gap_ms=1.70 out_started=true out_start_in_frame=4799
+start_frame_offset_out_minus_in_ms=102 (median completion-time difference)
+sine peak=0.0723 (-22.8 dBFS) glitches=3 max_err_rel=0.9363 first_glitches=[2013993, 2384105, 2879967]
+phase blocks=589 span_samples=0.0060 drift_first_to_last_samples=-0.0026 jumps_gt_2deg=0 amp_min=0.0643 amp_max=0.0646
+late_write lead_pos=1 write_to_completion_ms min=0.731 median=1.297 (completion ~= end of its frame)
+RESULT ok
+exit=0
+events since 2026-11-22T22:19:44: 0 error/warning (DCOM/DNS/Time ignored), 0 crash markers (41/1001/6008)
+
+##### sine-60s-d4-mq3-wl1-delay300 : vboxusb-gate stream --mode sine --secs 60 --amp 0.8 --out-depth 4 --in-depth 8 --min-queue 3 --write-lead 1 --write-delay-us 300  (2026-11-22T22:21:07)
+stream mode=sine secs=60 freq=1000 amp=0.8 in_depth=8 out_depth=4 in_ch=0
+vboxusb_version=5.0
+desc if1 alt1 ep=0x07 attr=0x05 wMaxPacketSize=126 bInterval=1
+desc if2 alt1 ep=0x86 attr=0x05 wMaxPacketSize=126 bInterval=1
+rate_readback in=48000 out=48000
+elapsed_s=60.009 in_urbs=60006 out_urbs=59900 in_frames=2880142 out_frames=2875054
+in_hist_frames_per_packet 0..7 = [0, 0, 0, 0, 0, 214, 479766, 68]
+frames_per_ms=47.9976 ppm_vs_usb=-50.7
+empty_in_packets before_out=0 after_out=0
+min_live_ms in=8 out=4 max_wake_gap_ms=1.22 out_started=true out_start_in_frame=4800
+start_frame_offset_out_minus_in_ms=102 (median completion-time difference)
+sine peak=0.0647 (-23.8 dBFS) glitches=1 max_err_rel=0.3404 first_glitches=[2880016]
+phase blocks=589 span_samples=0.0004 drift_first_to_last_samples=0.0001 jumps_gt_2deg=0 amp_min=0.0646 amp_max=0.0647
+late_write lead_pos=1 write_to_completion_ms min=1.418 median=1.696 (completion ~= end of its frame)
+RESULT ok
+exit=0
+events since 2026-11-22T22:21:02: 0 error/warning (DCOM/DNS/Time ignored), 0 crash markers (41/1001/6008)
+
+##### sine-300s-d4-mq3-wl1-delay300 : vboxusb-gate stream --mode sine --secs 300 --amp 0.8 --out-depth 4 --in-depth 8 --min-queue 3 --write-lead 1 --write-delay-us 300  (2026-11-22T22:22:27)
+stream mode=sine secs=300 freq=1000 amp=0.8 in_depth=8 out_depth=4 in_ch=0
+vboxusb_version=5.0
+desc if1 alt1 ep=0x07 attr=0x05 wMaxPacketSize=126 bInterval=1
+desc if2 alt1 ep=0x86 attr=0x05 wMaxPacketSize=126 bInterval=1
+rate_readback in=48000 out=48000
+elapsed_s=300.008 in_urbs=300007 out_urbs=299901 in_frames=14399608 out_frames=14394520
+in_hist_frames_per_packet 0..7 = [0, 0, 0, 0, 0, 1038, 2398708, 310]
+frames_per_ms=47.9976 ppm_vs_usb=-50.6
+empty_in_packets before_out=0 after_out=0
+min_live_ms in=8 out=3 max_wake_gap_ms=1.49 out_started=true out_start_in_frame=4800
+start_frame_offset_out_minus_in_ms=102 (median completion-time difference)
+sine peak=0.0719 (-22.9 dBFS) glitches=1 max_err_rel=0.9367 first_glitches=[12587330]
+phase blocks=2988 span_samples=0.0005 drift_first_to_last_samples=-0.0000 jumps_gt_2deg=0 amp_min=0.0644 amp_max=0.0647
+late_write lead_pos=1 write_to_completion_ms min=0.487 median=1.696 (completion ~= end of its frame)
+RESULT ok
+exit=0
+events since 2026-11-22T22:22:22: 0 error/warning (DCOM/DNS/Time ignored), 0 crash markers (41/1001/6008)
+
+##### sine-300s-d4-mq3-wl1-delay300-mmcss : vboxusb-gate stream --mode sine --secs 300 --amp 0.8 --out-depth 4 --in-depth 8 --min-queue 3 --write-lead 1 --write-delay-us 300 --mmcss  (2026-11-22T22:28:03)
+stream mode=sine secs=300 freq=1000 amp=0.8 in_depth=8 out_depth=4 in_ch=0
+vboxusb_version=5.0
+desc if1 alt1 ep=0x07 attr=0x05 wMaxPacketSize=126 bInterval=1
+desc if2 alt1 ep=0x86 attr=0x05 wMaxPacketSize=126 bInterval=1
+rate_readback in=48000 out=48000
+mmcss Pro Audio critical: on
+elapsed_s=300.008 in_urbs=300006 out_urbs=299900 in_frames=14399557 out_frames=14394469
+in_hist_frames_per_packet 0..7 = [0, 0, 0, 0, 0, 1026, 2398727, 295]
+frames_per_ms=47.9976 ppm_vs_usb=-50.8
+empty_in_packets before_out=0 after_out=0
+min_live_ms in=7 out=3 max_wake_gap_ms=2.87 out_started=true out_start_in_frame=4800
+start_frame_offset_out_minus_in_ms=102 (median completion-time difference)
+sine peak=0.0724 (-22.8 dBFS) glitches=41 max_err_rel=0.9769 first_glitches=[3399730, 8463429, 8463909, 8463981, 8464389, 8464869, 8464941, 8465397, 8465878, 8467797, 10335526, 10460989, 10461469, 10486620, 10487099, 10487579, 10488059, 10646689, 10722814, 10743069]
+phase blocks=2988 span_samples=0.0461 drift_first_to_last_samples=-0.0000 jumps_gt_2deg=0 amp_min=0.0600 amp_max=0.0647
+late_write lead_pos=1 write_to_completion_ms min=0.319 median=1.696 (completion ~= end of its frame)
+RESULT ok
+exit=0
+events since 2026-11-22T22:27:58: 0 error/warning (DCOM/DNS/Time ignored), 0 crash markers (41/1001/6008)
+
+##### sine-300s-d4-mq3-wl1 : vboxusb-gate stream --mode sine --secs 300 --amp 0.8 --out-depth 4 --in-depth 8 --min-queue 3 --write-lead 1  (2026-11-22T22:33:13)
+stream mode=sine secs=300 freq=1000 amp=0.8 in_depth=8 out_depth=4 in_ch=0
+vboxusb_version=5.0
+desc if1 alt1 ep=0x07 attr=0x05 wMaxPacketSize=126 bInterval=1
+desc if2 alt1 ep=0x86 attr=0x05 wMaxPacketSize=126 bInterval=1
+rate_readback in=48000 out=48000
+elapsed_s=300.009 in_urbs=300007 out_urbs=299901 in_frames=14399604 out_frames=14394516
+in_hist_frames_per_packet 0..7 = [0, 0, 0, 0, 0, 1031, 2398726, 299]
+frames_per_ms=47.9976 ppm_vs_usb=-50.8
+empty_in_packets before_out=0 after_out=0
+min_live_ms in=8 out=3 max_wake_gap_ms=1.23 out_started=true out_start_in_frame=4800
+start_frame_offset_out_minus_in_ms=102 (median completion-time difference)
+sine peak=0.0649 (-23.8 dBFS) glitches=1 max_err_rel=0.7677 first_glitches=[12587326]
+phase blocks=2988 span_samples=0.0050 drift_first_to_last_samples=-0.0001 jumps_gt_2deg=0 amp_min=0.0645 amp_max=0.0648
+late_write lead_pos=1 write_to_completion_ms min=0.773 median=1.982 (completion ~= end of its frame)
+RESULT ok
+exit=0
+events since 2026-11-22T22:33:08: 0 error/warning (DCOM/DNS/Time ignored), 0 crash markers (41/1001/6008)
+
+##### sine-300s-d4-mq3-wl1-prealloc : vboxusb-gate stream --mode sine --secs 300 --amp 0.8 --out-depth 4 --in-depth 8 --min-queue 3 --write-lead 1  (2026-11-22T22:38:46)
+stream mode=sine secs=300 freq=1000 amp=0.8 in_depth=8 out_depth=4 in_ch=0
+vboxusb_version=5.0
+desc if1 alt1 ep=0x07 attr=0x05 wMaxPacketSize=126 bInterval=1
+desc if2 alt1 ep=0x86 attr=0x05 wMaxPacketSize=126 bInterval=1
+rate_readback in=48000 out=48000
+elapsed_s=300.008 in_urbs=300007 out_urbs=299901 in_frames=14399605 out_frames=14394518
+in_hist_frames_per_packet 0..7 = [0, 0, 0, 0, 0, 1081, 2398625, 350]
+frames_per_ms=47.9976 ppm_vs_usb=-50.8
+empty_in_packets before_out=0 after_out=0
+min_live_ms in=8 out=4 max_wake_gap_ms=1.12 out_started=true out_start_in_frame=4799
+start_frame_offset_out_minus_in_ms=102 (median completion-time difference)
+sine peak=0.0649 (-23.8 dBFS) glitches=0 max_err_rel=0.0091 first_glitches=[]
+phase blocks=2988 span_samples=0.0004 drift_first_to_last_samples=0.0002 jumps_gt_2deg=0 amp_min=0.0648 amp_max=0.0648
+late_write lead_pos=1 write_to_completion_ms min=1.835 median=1.982 (completion ~= end of its frame)
+RESULT ok
+exit=0
+events since 2026-11-22T22:38:41: 0 error/warning (DCOM/DNS/Time ignored), 0 crash markers (41/1001/6008)
+
+##### sine-300s-d4-mq3-wl1-delay700-prealloc : vboxusb-gate stream --mode sine --secs 300 --amp 0.8 --out-depth 4 --in-depth 8 --min-queue 3 --write-lead 1 --write-delay-us 700  (2026-11-22T22:43:56)
+stream mode=sine secs=300 freq=1000 amp=0.8 in_depth=8 out_depth=4 in_ch=0
+vboxusb_version=5.0
+desc if1 alt1 ep=0x07 attr=0x05 wMaxPacketSize=126 bInterval=1
+desc if2 alt1 ep=0x86 attr=0x05 wMaxPacketSize=126 bInterval=1
+rate_readback in=48000 out=48000
+elapsed_s=300.009 in_urbs=300007 out_urbs=299901 in_frames=14399605 out_frames=14394518
+in_hist_frames_per_packet 0..7 = [0, 0, 0, 0, 0, 1054, 2398679, 323]
+frames_per_ms=47.9976 ppm_vs_usb=-50.8
+empty_in_packets before_out=0 after_out=0
+min_live_ms in=8 out=4 max_wake_gap_ms=1.38 out_started=true out_start_in_frame=4799
+start_frame_offset_out_minus_in_ms=102 (median completion-time difference)
+sine peak=0.0689 (-23.2 dBFS) glitches=1 max_err_rel=0.9390 first_glitches=[11068636]
+phase blocks=2988 span_samples=0.0088 drift_first_to_last_samples=0.0001 jumps_gt_2deg=0 amp_min=0.0647 amp_max=0.0648
+late_write lead_pos=1 write_to_completion_ms min=0.940 median=1.297 (completion ~= end of its frame)
+RESULT ok
+exit=0
+events since 2026-11-22T22:43:51: 0 error/warning (DCOM/DNS/Time ignored), 0 crash markers (41/1001/6008)
+
+##### sine-300s-d4-mq3-wl1-delay300-prealloc : vboxusb-gate stream --mode sine --secs 300 --amp 0.8 --out-depth 4 --in-depth 8 --min-queue 3 --write-lead 1 --write-delay-us 300  (2026-11-22T22:49:04)
+stream mode=sine secs=300 freq=1000 amp=0.8 in_depth=8 out_depth=4 in_ch=0
+vboxusb_version=5.0
+desc if1 alt1 ep=0x07 attr=0x05 wMaxPacketSize=126 bInterval=1
+desc if2 alt1 ep=0x86 attr=0x05 wMaxPacketSize=126 bInterval=1
+rate_readback in=48000 out=48000
+elapsed_s=300.009 in_urbs=300006 out_urbs=299900 in_frames=14399558 out_frames=14394470
+in_hist_frames_per_packet 0..7 = [0, 0, 0, 0, 0, 1051, 2398676, 321]
+frames_per_ms=47.9976 ppm_vs_usb=-50.7
+empty_in_packets before_out=0 after_out=0
+min_live_ms in=8 out=3 max_wake_gap_ms=1.87 out_started=true out_start_in_frame=4800
+start_frame_offset_out_minus_in_ms=102 (median completion-time difference)
+sine peak=0.0712 (-23.0 dBFS) glitches=2 max_err_rel=0.9409 first_glitches=[1634043, 3130319]
+phase blocks=2988 span_samples=0.0133 drift_first_to_last_samples=0.0001 jumps_gt_2deg=0 amp_min=0.0647 amp_max=0.0648
+late_write lead_pos=1 write_to_completion_ms min=0.782 median=1.695 (completion ~= end of its frame)
+RESULT ok
+exit=0
+events since 2026-11-22T22:48:59: 0 error/warning (DCOM/DNS/Time ignored), 0 crash markers (41/1001/6008)
+
+##### sine96-2s : vboxusb-gate stream --rate 96000 --mode sine --secs 2 --amp 0.8  (2026-11-22T22:54:26)
+stream rate=96000 mode=sine secs=2 freq=1000 amp=0.8 in_depth=8 out_depth=8 in_ch=0
+vboxusb_version=5.0
+desc if1 alt2 ep=0x07 attr=0x05 wMaxPacketSize=234 bInterval=1
+desc if2 alt2 ep=0x86 attr=0x05 wMaxPacketSize=234 bInterval=1
+rate_readback in=96000 out=96000
+elapsed_s=2.009 in_urbs=2005 out_urbs=1903 in_frames=173133 out_frames=177625
+in_hist_frames_per_packet 0..13 = [801, 0, 0, 0, 0, 732, 767, 0, 0, 0, 0, 12, 13725, 3]
+frames_per_ms=86.3506 ppm_vs_usb=-100514.3
+empty_in_packets before_out=0 after_out=801
+min_live_ms in=8 out=8 max_wake_gap_ms=1.06 out_started=true out_start_in_frame=4409
+start_frame_offset_out_minus_in_ms=102 (median completion-time difference)
+sine peak=0.0578 (-24.8 dBFS) glitches=0 max_err_rel=0.0028 first_glitches=[]
+phase blocks=7 span_samples=0.0022 drift_first_to_last_samples=0.0019 jumps_gt_2deg=0 amp_min=0.0553 amp_max=0.0553
+RESULT ok
+exit=0
+events since 2026-11-22T22:54:21: 0 error/warning (DCOM/DNS/Time ignored), 0 crash markers (41/1001/6008)
+
+##### sine96-10s : vboxusb-gate stream --rate 96000 --mode sine --secs 10 --amp 0.8  (2026-11-22T22:54:28)
+stream rate=96000 mode=sine secs=10 freq=1000 amp=0.8 in_depth=8 out_depth=8 in_ch=0
+vboxusb_version=5.0
+desc if1 alt2 ep=0x07 attr=0x05 wMaxPacketSize=234 bInterval=1
+desc if2 alt2 ep=0x86 attr=0x05 wMaxPacketSize=234 bInterval=1
+rate_readback in=96000 out=96000
+elapsed_s=10.010 in_urbs=10006 out_urbs=9903 in_frames=960527 out_frames=950640
+in_hist_frames_per_packet 0..13 = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 68, 79961, 19]
+frames_per_ms=95.9951 ppm_vs_usb=-51.0
+empty_in_packets before_out=0 after_out=0
+min_live_ms in=8 out=8 max_wake_gap_ms=1.08 out_started=true out_start_in_frame=9599
+start_frame_offset_out_minus_in_ms=102 (median completion-time difference)
+sine peak=0.0553 (-25.1 dBFS) glitches=0 max_err_rel=0.0098 first_glitches=[]
+phase blocks=88 span_samples=0.0004 drift_first_to_last_samples=0.0001 jumps_gt_2deg=0 amp_min=0.0553 amp_max=0.0553
+RESULT ok
+exit=0
+events since 2026-11-22T22:54:23: 0 error/warning (DCOM/DNS/Time ignored), 0 crash markers (41/1001/6008)
+
+##### sine96-60s : vboxusb-gate stream --rate 96000 --mode sine --secs 60 --amp 0.8  (2026-11-22T22:54:38)
+stream rate=96000 mode=sine secs=60 freq=1000 amp=0.8 in_depth=8 out_depth=8 in_ch=0
+vboxusb_version=5.0
+desc if1 alt2 ep=0x07 attr=0x05 wMaxPacketSize=234 bInterval=1
+desc if2 alt2 ep=0x86 attr=0x05 wMaxPacketSize=234 bInterval=1
+rate_readback in=96000 out=96000
+elapsed_s=60.010 in_urbs=60006 out_urbs=59904 in_frames=5760284 out_frames=5750492
+in_hist_frames_per_packet 0..13 = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 415, 479510, 123]
+frames_per_ms=95.9951 ppm_vs_usb=-50.7
+empty_in_packets before_out=0 after_out=0
+min_live_ms in=8 out=8 max_wake_gap_ms=1.31 out_started=true out_start_in_frame=9600
+start_frame_offset_out_minus_in_ms=102 (median completion-time difference)
+sine peak=0.0553 (-25.1 dBFS) glitches=0 max_err_rel=0.0037 first_glitches=[]
+phase blocks=588 span_samples=0.0004 drift_first_to_last_samples=0.0000 jumps_gt_2deg=0 amp_min=0.0553 amp_max=0.0553
+RESULT ok
+exit=0
+events since 2026-11-22T22:54:33: 0 error/warning (DCOM/DNS/Time ignored), 0 crash markers (41/1001/6008)
+
+##### click96-d4-wl1 : vboxusb-gate stream --rate 96000 --mode click --secs 10 --amp 0.8 --thr 0.005 --out-depth 4 --in-depth 8 --min-queue 3 --write-lead 1  (2026-11-22T22:55:47)
+stream rate=96000 mode=click secs=10 freq=1000 amp=0.8 in_depth=8 out_depth=4 in_ch=0
+vboxusb_version=5.0
+desc if1 alt2 ep=0x07 attr=0x05 wMaxPacketSize=234 bInterval=1
+desc if2 alt2 ep=0x86 attr=0x05 wMaxPacketSize=234 bInterval=1
+rate_readback in=96000 out=96000
+elapsed_s=10.010 in_urbs=10006 out_urbs=9900 in_frames=960528 out_frames=950352
+in_hist_frames_per_packet 0..13 = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 63, 79970, 15]
+frames_per_ms=95.9952 ppm_vs_usb=-50.0
+empty_in_packets before_out=0 after_out=0
+min_live_ms in=8 out=4 max_wake_gap_ms=1.09 out_started=true out_start_in_frame=9600
+start_frame_offset_out_minus_in_ms=102 (median completion-time difference)
+clicks found=39 missed=0 app_rt_ms min=1.822 median=1.925 max=1.966
+wire_rt_ms (OUT microframe -> IN microframe) min=0.969 median=0.969 max=0.979
+late_write lead_pos=1 write_to_completion_ms min=1.689 median=1.973 (completion ~= end of its frame)
+RESULT ok
+exit=0
+events since 2026-11-22T22:55:42: 0 error/warning (DCOM/DNS/Time ignored), 0 crash markers (41/1001/6008)
+
+##### sine192-2s : vboxusb-gate stream --rate 192000 --mode sine --secs 2 --amp 0.8  (2026-11-22T22:55:57)
+stream rate=192000 mode=sine secs=2 freq=1000 amp=0.8 in_depth=8 out_depth=8 in_ch=0
+vboxusb_version=5.0
+desc if1 alt3 ep=0x07 attr=0x05 wMaxPacketSize=450 bInterval=1
+desc if2 alt3 ep=0x86 attr=0x05 wMaxPacketSize=450 bInterval=1
+rate_readback in=192000 out=192000
+elapsed_s=2.008 in_urbs=2006 out_urbs=1904 in_frames=352758 out_frames=361038
+in_hist_frames_per_packet 0..25 = [801, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1095, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 21, 14126, 4]
+frames_per_ms=175.8514 ppm_vs_usb=-84107.1
+empty_in_packets before_out=0 after_out=801
+min_live_ms in=8 out=8 max_wake_gap_ms=1.19 out_started=true out_start_in_frame=9599
+start_frame_offset_out_minus_in_ms=102 (median completion-time difference)
+sine peak=0.0617 (-24.2 dBFS) glitches=43 max_err_rel=0.0344 first_glitches=[201599, 203074, 206823, 207174, 207940, 213444, 213525, 213631, 214163, 215939, 224394, 227666, 232888, 235757, 246079, 248970, 250588, 251277, 253780, 256127]
+phase blocks=7 span_samples=0.0011 drift_first_to_last_samples=0.0009 jumps_gt_2deg=0 amp_min=0.0611 amp_max=0.0611
+RESULT ok
+exit=0
+events since 2026-11-22T22:55:52: 0 error/warning (DCOM/DNS/Time ignored), 0 crash markers (41/1001/6008)
+
+##### sine192-10s : vboxusb-gate stream --rate 192000 --mode sine --secs 10 --amp 0.8  (2026-11-22T22:55:59)
+stream rate=192000 mode=sine secs=10 freq=1000 amp=0.8 in_depth=8 out_depth=8 in_ch=0
+vboxusb_version=5.0
+desc if1 alt3 ep=0x07 attr=0x05 wMaxPacketSize=450 bInterval=1
+desc if2 alt3 ep=0x86 attr=0x05 wMaxPacketSize=450 bInterval=1
+rate_readback in=192000 out=192000
+elapsed_s=10.009 in_urbs=10006 out_urbs=9903 in_frames=1921055 out_frames=1901280
+in_hist_frames_per_packet 0..25 = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 136, 79873, 39]
+frames_per_ms=191.9903 ppm_vs_usb=-50.5
+empty_in_packets before_out=0 after_out=0
+min_live_ms in=8 out=8 max_wake_gap_ms=1.12 out_started=true out_start_in_frame=19199
+start_frame_offset_out_minus_in_ms=102 (median completion-time difference)
+sine peak=0.0615 (-24.2 dBFS) glitches=421 max_err_rel=0.0275 first_glitches=[212976, 214462, 215799, 242061, 244613, 245074, 250838, 261073, 261445, 262376, 263174, 264480, 265118, 279148, 283279, 293884, 294145, 296833, 299335, 311674]
+phase blocks=88 span_samples=0.0009 drift_first_to_last_samples=0.0008 jumps_gt_2deg=0 amp_min=0.0611 amp_max=0.0611
+RESULT ok
+exit=0
+events since 2026-11-22T22:55:54: 0 error/warning (DCOM/DNS/Time ignored), 0 crash markers (41/1001/6008)
+
+##### sine192-60s : vboxusb-gate stream --rate 192000 --mode sine --secs 60 --amp 0.8  (2026-11-22T22:56:09)
+stream rate=192000 mode=sine secs=60 freq=1000 amp=0.8 in_depth=8 out_depth=8 in_ch=0
+vboxusb_version=5.0
+desc if1 alt3 ep=0x07 attr=0x05 wMaxPacketSize=450 bInterval=1
+desc if2 alt3 ep=0x86 attr=0x05 wMaxPacketSize=450 bInterval=1
+rate_readback in=192000 out=192000
+elapsed_s=60.009 in_urbs=60006 out_urbs=59904 in_frames=11520567 out_frames=11500984
+in_hist_frames_per_packet 0..25 = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 837, 478959, 252]
+frames_per_ms=191.9903 ppm_vs_usb=-50.8
+empty_in_packets before_out=0 after_out=0
+min_live_ms in=8 out=8 max_wake_gap_ms=1.14 out_started=true out_start_in_frame=19199
+start_frame_offset_out_minus_in_ms=102 (median completion-time difference)
+sine peak=0.0615 (-24.2 dBFS) glitches=2860 max_err_rel=0.0293 first_glitches=[211715, 212774, 222640, 224448, 225773, 226444, 227179, 227582, 229704, 229898, 233140, 233677, 235373, 255071, 263075, 265065, 272036, 274367, 275354, 277223]
+phase blocks=588 span_samples=0.0012 drift_first_to_last_samples=0.0004 jumps_gt_2deg=0 amp_min=0.0611 amp_max=0.0611
+RESULT ok
+exit=0
+events since 2026-11-22T22:56:04: 0 error/warning (DCOM/DNS/Time ignored), 0 crash markers (41/1001/6008)
+
+##### sine192-4k-60s : vboxusb-gate stream --rate 192000 --mode sine --freq 4000 --secs 60 --amp 0.8  (2026-11-22T22:57:22)
+stream rate=192000 mode=sine secs=60 freq=4000 amp=0.8 in_depth=8 out_depth=8 in_ch=0
+vboxusb_version=5.0
+desc if1 alt3 ep=0x07 attr=0x05 wMaxPacketSize=450 bInterval=1
+desc if2 alt3 ep=0x86 attr=0x05 wMaxPacketSize=450 bInterval=1
+rate_readback in=192000 out=192000
+elapsed_s=60.009 in_urbs=60006 out_urbs=59904 in_frames=11520566 out_frames=11500983
+in_hist_frames_per_packet 0..25 = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 831, 478972, 245]
+frames_per_ms=191.9902 ppm_vs_usb=-50.9
+empty_in_packets before_out=0 after_out=0
+min_live_ms in=8 out=8 max_wake_gap_ms=1.15 out_started=true out_start_in_frame=19199
+start_frame_offset_out_minus_in_ms=102 (median completion-time difference)
+sine peak=0.0585 (-24.7 dBFS) glitches=5531 max_err_rel=0.0316 first_glitches=[214984, 221989, 222228, 222336, 226445, 227060, 228361, 228598, 230192, 230879, 232232, 234358, 236691, 237492, 238768, 238918, 239033, 241098, 241604, 243112]
+phase blocks=588 span_samples=0.0006 drift_first_to_last_samples=0.0006 jumps_gt_2deg=0 amp_min=0.0581 amp_max=0.0581
+RESULT ok
+exit=0
+events since 2026-11-22T22:57:17: 0 error/warning (DCOM/DNS/Time ignored), 0 crash markers (41/1001/6008)
+
+##### click192-d4-wl1 : vboxusb-gate stream --rate 192000 --mode click --secs 10 --amp 0.8 --thr 0.005 --out-depth 4 --in-depth 8 --min-queue 3 --write-lead 1  (2026-11-22T22:58:23)
+stream rate=192000 mode=click secs=10 freq=1000 amp=0.8 in_depth=8 out_depth=4 in_ch=0
+vboxusb_version=5.0
+desc if1 alt3 ep=0x07 attr=0x05 wMaxPacketSize=450 bInterval=1
+desc if2 alt3 ep=0x86 attr=0x05 wMaxPacketSize=450 bInterval=1
+rate_readback in=192000 out=192000
+elapsed_s=10.009 in_urbs=10006 out_urbs=9900 in_frames=1921054 out_frames=1900703
+in_hist_frames_per_packet 0..25 = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 134, 79878, 36]
+frames_per_ms=191.9902 ppm_vs_usb=-51.0
+empty_in_packets before_out=0 after_out=0
+min_live_ms in=8 out=4 max_wake_gap_ms=1.63 out_started=true out_start_in_frame=19199
+start_frame_offset_out_minus_in_ms=102 (median completion-time difference)
+clicks found=39 missed=0 app_rt_ms min=1.776 median=1.902 max=1.964
+wire_rt_ms (OUT microframe -> IN microframe) min=0.693 median=0.693 max=0.698
+late_write lead_pos=1 write_to_completion_ms min=1.184 median=1.964 (completion ~= end of its frame)
+RESULT ok
+exit=0
+events since 2026-11-22T22:58:18: 0 error/warning (DCOM/DNS/Time ignored), 0 crash markers (41/1001/6008)

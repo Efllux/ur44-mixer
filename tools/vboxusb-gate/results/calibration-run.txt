@@ -1,0 +1,49 @@
+﻿calibration: rates [48000, 96000, 192000], screen 20 s/step, validate 300 s, margin 1 step(s); worst case ~25 min. Ctrl+C stops cleanly.
+UR44 firmware: BOOT V2.12 MAIN V2.12
+LOOPBACK on (was 0)
+capture peaks (dBFS): [-5.0, -5.0, -83.0, -84.0, -83.0, -84.0]
+loopback returns on capture channel 1 at -5.0 dBFS
+
+=== 48000 Hz
+  step 0 pass  (8 ms queue, write at submit; wake gap max 1.16 ms)
+  step 1 pass  (4 ms queue, write at submit; wake gap max 1.25 ms)
+  step 2 pass  (4 ms queue, late write ~2 ms ahead; wake gap max 1.82 ms, write margin min 2.02 ms)
+  step 3 pass  (4 ms queue, late write ~1 ms ahead; wake gap max 1.19 ms, write margin min 1.62 ms)
+  step 4 pass  (late write ~0.8 ms ahead; wake gap max 1.66 ms, write margin min 0.99 ms)
+  step 5 pass  (late write ~0.6 ms ahead; wake gap max 1.21 ms, write margin min 1.31 ms)
+  step 6 pass  (late write ~0.4 ms ahead; wake gap max 1.07 ms, write margin min 1.28 ms)
+  step 7 FAIL (late write ~0.2 ms ahead): 4 dropout(s)/slip(s), worst error 94 % of the tone
+  validating step 5 (late write ~0.6 ms ahead) for 300 s ...
+  validation FAILED: 2 dropout(s)/slip(s), worst error 87 % of the tone; backing off one step
+  validating step 4 (late write ~0.8 ms ahead) for 300 s ...
+  validated (wake gap max 1.10 ms, clock -50.6 ppm)
+  round trip 1.78 ms median / 1.79 ms max (USB wire 0.604 ms)
+
+=== 96000 Hz
+  step 0 pass  (8 ms queue, write at submit; wake gap max 1.04 ms)
+  step 1 pass  (4 ms queue, write at submit; wake gap max 1.05 ms)
+  step 2 pass  (4 ms queue, late write ~2 ms ahead; wake gap max 1.06 ms, write margin min 2.89 ms)
+  step 3 pass  (4 ms queue, late write ~1 ms ahead; wake gap max 1.03 ms, write margin min 1.90 ms)
+  step 4 pass  (late write ~0.8 ms ahead; wake gap max 1.08 ms, write margin min 1.67 ms)
+  step 5 pass  (late write ~0.6 ms ahead; wake gap max 1.03 ms, write margin min 1.50 ms)
+  step 6 pass  (late write ~0.4 ms ahead; wake gap max 1.06 ms, write margin min 1.33 ms)
+  step 7 pass  (late write ~0.2 ms ahead; wake gap max 1.10 ms, write margin min 1.08 ms)
+  validating step 6 (late write ~0.4 ms ahead) for 300 s ...
+  validated (wake gap max 1.11 ms, clock -50.8 ppm)
+  round trip 1.38 ms median / 1.39 ms max (USB wire 0.552 ms)
+
+=== 192000 Hz
+  step 0 pass  (8 ms queue, write at submit; wake gap max 1.04 ms)
+  step 1 pass  (4 ms queue, write at submit; wake gap max 1.12 ms)
+  step 2 FAIL (4 ms queue, late write ~2 ms ahead): 3 dropout(s)/slip(s), worst error 89 % of the tone
+  validating step 0 (8 ms queue, write at submit) for 300 s ...
+  validated (wake gap max 2.04 ms, clock -50.6 ppm)
+  round trip 7.86 ms median / 8.01 ms max (USB wire 0.526 ms)
+LOOPBACK restored to 0
+
+=== calibration result (complete)
+   rate  setting                                   RT median     RT max  headroom
+  48000  late write ~0.8 ms ahead                     1.78ms     1.79ms      2 st
+  96000  late write ~0.4 ms ahead                     1.38ms     1.39ms      1 st
+ 192000  8 ms queue, write at submit                  7.86ms     8.01ms      1 st
+saved results/calibration-this-pc.json

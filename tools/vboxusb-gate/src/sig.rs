@@ -3,7 +3,7 @@
 //! Sine: outputs 1/2 play a sine of `freq` (default 1 kHz) as a function of the playback frame index.
 //! Two independent detectors run on the capture channel:
 //! - Predictor: e[n] = x[n] - 2cos(w) x[n-1] + x[n-2] is ~0 for a clean sine. A dropped, repeated or
-//!   zeroed sample gives |e| up to ~A*w (0.13 A at 1 kHz), well above noise. Glitch = |e| > 0.02 A;
+//!   zeroed sample gives |e| up to ~A*w (0.13 A at 1 kHz), well above noise. Glitch = |e| > GLITCH_REL (0.05) x A;
 //!   events closer than 64 samples are merged. It is weak right at the sine peaks, hence:
 //! - Phase tracker: I/Q demodulation per 100 ms block against the capture sample index. While no
 //!   sample is lost or repeated anywhere in the loop, playback frame p comes back at capture index
@@ -29,6 +29,9 @@ impl Sine {
         (ph.sin() as f32) * self.amp
     }
 }
+
+/// A dropout scores ~1, a slipped sample ~w (0.13 at 1 kHz / 48 kHz); analog noise at 192 kHz~0.03.
+pub const GLITCH_REL: f32 = 0.05;
 
 pub struct SineAnalyzer {
     w: f64,
@@ -123,7 +126,7 @@ impl SineAnalyzer {
         if rel > self.max_err_rel {
             self.max_err_rel = rel;
         }
-        if rel > 0.02 {
+        if rel > GLITCH_REL {
             if self.glitches == 0 || pos >= self.last_evt + 64 {
                 self.glitches += 1;
                 if self.first_glitches.len() < 20 {

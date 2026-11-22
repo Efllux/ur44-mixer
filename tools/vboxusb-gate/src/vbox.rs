@@ -54,8 +54,10 @@ pub const IOCTL_SET_CONFIG: u32 = ctl(0x60A);
 pub const IOCTL_CLAIM_DEVICE: u32 = ctl(0x60B);
 pub const IOCTL_RELEASE_DEVICE: u32 = ctl(0x60C);
 pub const IOCTL_GET_VERSION: u32 = ctl(0x60F);
+pub const IOCTL_ABORT_ENDPOINT: u32 = ctl(0x610);
 
 pub const TYPE_ISOC: u32 = 1;
+pub const TYPE_BULK: u32 = 2;
 pub const TYPE_MSG: u32 = 4;
 pub const DIR_SETUP: u32 = 0;
 pub const DIR_IN: u32 = 1;
@@ -265,6 +267,50 @@ impl Dev {
             data[..n].copy_from_slice(&buf[8..8 + n]);
         }
         Ok(n)
+    }
+
+    /// Bulk transfer on endpoint address `ep_addr` (bit 7 = IN). Returns bytes transferred, or
+    /// Ok(None) on timeout (the pipe is then aborted with ABORT_ENDPOINT and the IRP drained).
+    pub fn bulk(&self, ep_addr: u8, buf: &mut [u8], timeout_ms: u32) -> Result<Option<usize>> {
+        let din = ep_addr & 0x80 != 0;
+        let mut u = Urb::zeroed();
+        u.kind = TYPE_BULK;
+        u.ep = (ep_addr & 0x0f) as u32;
+        u.dir = if din { DIR_IN } else { DIR_OUT };
+        u.flags = 1;
+        u.len = buf.len() as u64;
+        u.buf = buf.as_mut_ptr();
+        unsafe {
+            let ev = CreateEventW(null(), 1, 0, null());
+            let mut ov: OVERLAPPED = std::mem::zeroed();
+            ov.hEvent = ev;
+            let p = &mut u as *mut Urb as *mut u8;
+            let ok = DeviceIoControl(self.h, IOCTL_SEND_URB, p as _, 104, p as _, 104, null_mut(), &mut ov);
+            if ok == 0 && GetLastError() != ERROR_IO_PENDING {
+                let e = GetLastError();
+                CloseHandle(ev);
+                bail!("bulk {ep_addr:#04x}: SEND_URB failed: error {e}");
+            }
+            let timed_out = WaitForSingleObject(ev, timeout_ms) == WAIT_TIMEOUT;
+            if timed_out {
+                let b = [ep_addr];
+                let _ = self.ioctl(IOCTL_ABORT_ENDPOINT, b.as_ptr(), 1, null_mut(), 0);
+            }
+            let mut got = 0u32;
+            let r = GetOverlappedResult(self.h, &ov, &mut got, 1);
+            CloseHandle(ev);
+            if timed_out {
+                return Ok(None);
+            }
+            if r == 0 {
+                bail!("bulk {ep_addr:#04x} failed: error {}", GetLastError());
+            }
+            let err = { u.error };
+            if err != 0 {
+                bail!("bulk {ep_addr:#04x}: {}", status_name(err));
+            }
+            Ok(Some({ u.len } as usize))
+        }
     }
 
     /// Submit an isochronous URB asynchronously. Refuses anything but exactly 8 packets.
