@@ -5,6 +5,9 @@ Results of `tools/winusb-gate` on Windows 10 LTSC. The UR44 is bound to in-box `
 log is in `tools/winusb-gate/results/gate-log.txt`. This file starts with the crash investigation.
 **Verdict (section 7): NO-GO for a WinUSB + ASIO driver.** The last OUT option,
 `ISO_NUM_FIXED_PACKETS`, does not exist in in-box winusb.sys.
+**Verdict (section 8): GO with caveats for playback through VBoxUSB.sys** (Microsoft-catalog-signed,
+installed by usbipd-win): 5 min of clean duplex at 48 kHz, no drift, 4.9 ms app round trip at a
+4 ms queue.
 
 ## Crashes on 2026-11-21/22 (dump analysis)
 
@@ -240,3 +243,151 @@ The URB evidence came from `dq ffffbc0934215100 L74`, `!pool` and `!process 0 0 
 on MEMORY.DMP. The copies were deleted afterwards because they contain kernel memory. The originals
 stay in `C:\Windows`. The next crash will overwrite `MEMORY.DMP` (`OverwriteExistingDebugFile`); the
 minidumps are kept.
+
+## 8. VBoxUSB gate (2026-11-22, on the main PC)
+
+Tool: `tools/vboxusb-gate` (MIT). It talks to VBoxUSB.sys over its IOCTLs only. The struct
+definitions are our own, written from the documented byte layout, and no GPL code is copied. Raw
+output of every run is in `tools/vboxusb-gate/results/gate-log.txt`.
+
+### Platform and install
+
+- Secure Boot **off** (`UEFISecureBootEnabled=0`). VBS and Memory Integrity (HVCI) **off**:
+  Win32_DeviceGuard shows nothing configured or running.
+- One elevated run (`scripts/setup-elevated.ps1`, one UAC prompt) did the whole admin part:
+  - installed **usbipd-win 5.3.0** (latest release; MSI Authenticode-valid, signed by the
+    author through Certum)
+  - ran `usbipd bind --force --hardware-id 0499:150e`
+  - stopped the usbipd service
+  - registered an on-demand restore task that runs with highest privileges as the user, so the
+    unbind needed no second prompt; the task deletes itself afterwards
+- Drivers in usbipd-win 5.3.0:
+  - **VBoxUSB.sys 7.2.2.170484** (VirtualBox 7.2.2, not 7.2.22; 7.2.22 is only on usbipd-win
+    `master`). Its catalog `VBoxUSB.cat` is signed by **Microsoft Windows Hardware Compatibility
+    Publisher**.
+  - VBoxUSBMon.sys (same version) carries an **Oracle** signature. It is not needed for this
+    path. With Secure Boot on, whether it loads is untested here.
+- Event log: one `VBoxUSBMon` event 4 ("internal error in its data structures") at the moment
+  `usbipd list`/`bind` ran, before any streaming. It is harmless here, but noted.
+
+### Capture and open
+
+- `bind --force` installs VBoxUSB as the function driver of the **whole device**. It replaces
+  usbccgp, so MI_00..MI_04 disappear and the UR44 Mixer app loses interface 4 while the device is
+  bound. The app was closed for the test and restarted afterwards.
+- VBoxUSBMon is not involved in a forced bind. The usbipd service only opens the device on
+  `attach`, so it never held it. It was stopped anyway, which is not required.
+- **A non-admin process can open the device.** The steps are:
+  1. Enumerate device interface `{00873fdf-cafe-80ee-aa5e-00c04fb1720b}` and pick the
+     `vid_0499&pid_150e` path.
+  2. `CreateFile` with read/write and overlapped I/O.
+  3. `GET_VERSION` (5.0), `GET_DEVICE`, `CLAIM_DEVICE`.
+  4. `SET_CONFIG(1)`. VBoxUSB leaves the device unconfigured until it is told otherwise.
+  5. Select alt 0, then alt 1, on interface 2 and then interface 1.
+  6. UAC1 SET_CUR 48000 on 0x86 and 0x07, sent as control-message URBs. GET_CUR read back
+     48000 on both.
+
+  `GET_DEVICE` is mandatory: the driver only learns there that the device is high speed. Without
+  it, the scheduler advances 8 frames per URB instead of 1.
+- The claim is exclusive per file object, so one process owns the device and every interface.
+
+### Driver behaviour (verified in the source of the shipped version)
+
+- Isochronous `SEND_URB` uses `aIsoPkts[i].cb` and `.off` per packet, so **per-packet lengths
+  work**. The limit is 8 packets per IOCTL, and a release build does not check it; the tool
+  refuses anything but 8.
+- The driver sets the StartFrame itself to `max(current frame + 2, pipe's next frame)` and
+  advances it by one frame per URB on high-speed devices. If the queue runs dry it re-anchors
+  silently: there is no error, just a gap. The tool detects this before it happens by counting
+  queued URBs whose IOCTL has not completed yet. If fewer than 4 remain, the run stops.
+- Per-packet status mapping: SUCCESS → 0, NOT_ACCESSED → 4, anything else (including
+  ISO_NOT_ACCESSED_LATE) → 1. The tool stops on any non-zero status.
+- Every transfer is a whole frame (8 microframes), so the sub-frame URB pattern behind the three
+  WinUSB bugchecks (section 1) cannot occur.
+
+### Runs
+
+Safety rules were enforced in code throughout:
+- exactly 8 packets per IN and OUT URB
+- 48 kHz only
+- at least 4 ms still queued after each resubmission
+- stop at the first error or non-OK packet
+- stop with a clean drain, never an abort
+
+OUT packet i always carries the frame count of an IN packet, taken in order through a FIFO; an
+empty IN packet would have mapped to 6 frames. Playback starts after 100 ms of stable capture. The
+signal is a 1 kHz sine on outputs 1/2, recorded on input 1 over the MAIN → input 1 cable. The event
+log was checked after every run and showed 0 errors and 0 crash markers each time.
+
+| Run | Queue IN/OUT | IN / OUT URBs | IN frames per ms (ppm) | Min queued IN/OUT | Packet errors | Glitches | Phase span | Result |
+|---|---|---|---|---|---|---|---|---|
+| sine 2 s (gain too low, −47 dBFS) | 8/8 | 2 006 / 1 904 | 47.9975 (−52) | 8 / 8 | 0 | n/a (noise) | 0.0015 samples | ok |
+| sine 2 s after gain fix (−34 dBFS) | 8/8 | 2 006 / 1 904 | 47.9975 (−52) | 8 / 8 | 0 | 0 | 0.0006 samples | ok |
+| sine 10 s, amp 0.8 (−23.9 dBFS) | 8/8 | 10 006 / 9 904 | 47.9976 (−50) | 8 / 8 | 0 | 0 | 0.0002 samples | ok |
+| sine 60 s | 8/8 | 60 006 / 59 904 | 47.9976 (−50) | 8 / 8 | 0 | 0 | 0.0010 samples | ok |
+| **sine 5 min** | 8/8 | 300 007 / 299 905 | 47.9976 (−50.4) | 7 / 7 | 0 | **0** | **0.0014 samples** | ok |
+| sine 60 s, minimum queue | 4/4 | 60 002 / 59 900 | 47.9976 (−50) | 4 / 4 | 0 | 0 | 0.0004 samples | ok |
+
+- **Sine/drift verdict: clean.** In 5 min the glitch detector found nothing; the largest prediction
+  error was 0.8 % of the tone, against a 2 % threshold. The 1 kHz phase, measured against the
+  capture sample index in 2 988 blocks of 100 ms, spanned 0.0014 samples with no step over 2°.
+  One lost or repeated sample anywhere in the loop would move it by 1 sample (7.5°). The amplitude
+  stayed within 0.3 %.
+- The IN packet mix over 5 min was 1 040 × 5, 2 398 702 × 6 and 314 × 7 frames, with no empty
+  packets: the device is 50 ppm slow, as in section 7. Mirroring the IN sizes kept OUT exactly
+  locked to it.
+- The largest gap between two wakeups of the streaming thread was 1.68 ms, with the process at high
+  priority and the thread time-critical.
+
+### Latency (click on outputs 1/2, MAIN → input 1, 39 clicks per run, none missed)
+
+| Queue IN/OUT | App round trip (OUT submit → IN completion), min / median / max | Wire round trip (OUT microframe → IN microframe) |
+|---|---|---|
+| 8/8 | 8.856 / 8.946 / 9.053 ms | 1.417 ms (68 samples) |
+| 8/6 | 6.783 / 6.926 / 7.060 ms | 1.417 ms |
+| 4/4 | **4.811 / 4.931 / 5.072 ms** | 1.417 ms |
+
+- The **wire round trip is a constant 1.417 ms** (±0.02 ms) from the USB microframe that carries the
+  click to the microframe that brings it back. It is the analog path: DAC, cable, ADC and the
+  device's buffers. The macOS internal digital loopback is 29 samples, against our 68 through
+  analog.
+- The app round trip is the time from writing the click into an OUT URB to receiving the IN URB
+  that contains it. In practice that is the OUT queue depth + 1.42 ms + about 0.5 ms. At the
+  minimum queue the safety rules allow (4 ms) it is **4.9 ms**. That is about Yamaha's 4.4–4.5 ms
+  (macOS DriverKit) and 3× the macOS driver's 1.55–1.71 ms. Closing the gap needs a queue of 1–2 ms
+  per pipe, which is below this test's safety floor and untested. The driver re-anchors silently
+  if the queue runs dry, so a smaller queue needs a real-time thread and a re-anchor-aware design.
+- The OUT pipe's start frame was 102 ms after the IN pipe's: 100 ms of stable capture, then a 2 ms
+  lead. This was derived from the median completion-time difference and was the same in every run.
+
+### Restore
+
+- `usbipd unbind` ran from the on-demand task, with no prompt. Windows reinstalled `oem18.inf`:
+  usbccgp on the parent and WinUSB on MI_00..MI_04.
+- The usbipd service was started again. The tasks and `C:\ProgramData\ur44-vboxgate` were removed.
+- `ur44ctl version` → BOOT/MAIN V2.12, and the UR44 Mixer app was restarted.
+- usbipd-win stays installed.
+
+### Verdict: GO with caveats for a playback driver on VBoxUSB
+
+Go:
+- It needs no driver signing of our own: VBoxUSB.sys is Microsoft-catalog-signed and talked to
+  over documented IOCTLs.
+- Per-packet OUT sizing works, so implicit feedback is exact.
+- Duplex at 48 kHz ran 5 min without a single error, late packet, glitch or drift.
+- A non-admin process works.
+
+Caveats:
+1. **Exclusive whole-device ownership.** While bound, WinUSB/MI_04 is gone, so the mixer must go
+   through the same owner: one process or service that owns the device and runs both the audio
+   streams and the DSP mixer control (interface 4 control/bulk through `SEND_URB`). An ASIO DLL
+   inside a DAW cannot be that owner if the mixer app has to run at the same time.
+2. **Latency floor at the tested safety level: 4.9 ms app round trip.** Getting near macOS needs a
+   1–2 ms queue, which is untested, and the driver re-anchors silently on underrun. That needs its
+   own gated test series.
+3. **Distribution.** The device must be bound with `usbipd bind --force`, which needs admin once.
+   We depend on usbipd-win's driver package, or ship the unmodified Oracle binaries ourselves: GPL,
+   so with a source offer. usbipd-win 5.3.0 ships VirtualBox 7.2.2. The behaviour must be
+   re-checked when that driver changes.
+4. Only tested with Secure Boot and HVCI off, at 48 kHz, on the main PC. 44.1/96/192 kHz, Secure
+   Boot on and CPU cost (2 000 IOCTLs/s) were not measured.

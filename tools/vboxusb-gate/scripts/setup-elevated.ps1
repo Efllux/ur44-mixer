@@ -35,7 +35,7 @@ try {
     }
     Path-Refresh
     Log "usbipd --version: $(& usbipd --version 2>&1)"
-    foreach ($f in 'C:\Windows\System32\drivers\VBoxUSBMon.sys') {
+    foreach ($f in 'C:\Program Files\usbipd-win\Drivers\VBoxUSB.sys', 'C:\Program Files\usbipd-win\Drivers\VBoxUSBMon.sys') {
         if (Test-Path $f) { $s = Get-AuthenticodeSignature $f; Log "$f signature $($s.Status) $($s.SignerCertificate.Subject)" }
     }
     Get-WindowsDriver -Online | Where-Object { $_.OriginalFileName -match 'vboxusb' } | ForEach-Object {

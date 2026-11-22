@@ -1,1 +1,4 @@
 target/
+# setup/restore/msi logs name the machine and user; gate-log.txt is the measurement record
+results/*.log
+results/task-*.txt
