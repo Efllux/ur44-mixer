@@ -489,12 +489,17 @@ loopback, so the converters are not included):
 - 192 kHz: the lead-2 step failed screening with 3 dropouts. The ladder stops at the first
   failure, so lead 1 was not tried, although a 10 s click run at 192 kHz / lead 1 had passed over
   the cable earlier. Late write at 192 kHz moves 450-byte packets, and the fetch point may differ.
-  This needs its own look before it is trusted. A future ladder could keep probing past a single
-  failure.
+  This needs its own look before it is trusted. Since then, the calibration re-checks a failed
+  step once and stops only at a step that fails twice; that build has not run on hardware yet
+  (the UR44 was disconnected), so the 192 kHz row above is from the old walk.
 - The macOS counterpart is `driver/tools/calibrate.sh`. It switches LOOPBACK with `ur44ctl`,
-  sweeps the plug-in timing (`ur_hal_test -c`: margins, guard, scan period) and the client
-  buffer, judges each step by the plug-in's error counters, validates, and measures with
-  `tools/roundtrip`. It is **untested**: it was written on Windows without a Mac.
+  sweeps the plug-in timing (`ur_hal_test -q -c`: margins, guard, scan period) and the client
+  buffer, judges each step by the plug-in's error counters plus the client's sample time breaks,
+  validates, and measures with `tools/roundtrip`. It is **untested**: it was written on Windows
+  without a Mac. A review against `ur_hal_test.c` and the engine fixed two bugs before any run:
+  `-c` without `-q` also recorded for 5 s, and the error count could miss errors because the
+  engine resets its counters at every start (the script now reads the run's own statistics and
+  detects a reset from `inputFrames`).
 
 ### State left on this PC
 

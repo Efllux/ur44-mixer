@@ -5,8 +5,8 @@
 //!                          [--margin 1] [--load] [--out FILE]
 //!
 //! For each rate it walks a ladder of settings from safe to aggressive (queue depth, late-write
-//! lead, write delay). Each step is screened with a sine run; the walk stops at the first step
-//! with any error, dropout or phase jump. The chosen setting is the last passing step minus
+//! lead, write delay). Each step is screened with a sine run; a step with any error, dropout or
+//! phase jump is re-checked once, and the walk stops at the first step that fails twice. The chosen setting is the last passing step minus
 //! `--margin` steps (default 1: one step of headroom), and it must then pass a long validation
 //! run (`--validate-secs`, optionally with every CPU core busy: `--load`). A failed validation
 //! moves one step back and validates again. Finally a click run measures the round trip.
@@ -175,7 +175,7 @@ pub fn run(args: &[String]) -> Result<()> {
             bail!("unsupported rate {r}");
         }
     }
-    let est = rates.len() as f64 * (LADDER.len() as f64 * (screen + 2.0) + validate + 15.0) / 60.0;
+    let est = rates.len() as f64 * ((LADDER.len() as f64 + 1.0) * (screen + 2.0) + validate + 15.0) / 60.0;
     println!("calibration: rates {rates:?}, screen {screen} s/step, validate {validate} s{}, margin {margin} step(s); worst case ~{est:.0} min. Ctrl+C stops cleanly.",
         if load { " under full CPU load" } else { "" });
 
@@ -208,10 +208,24 @@ pub fn run(args: &[String]) -> Result<()> {
             if aborted() {
                 break;
             }
-            let rep = stream(&opts(st, Mode::Sine, screen, in_ch, 0.0))?;
+            let mut rep = stream(&opts(st, Mode::Sine, screen, in_ch, 0.0))?;
+            let mut retried = false;
+            if let Err(e) = verdict(&rep, in_ch) {
+                // One re-check: a single hiccup (another driver, a timer interrupt storm) must not
+                // end the walk early. On the development PC 192 kHz failed "~2 ms ahead" once
+                // although "~1 ms ahead" (less margin) had passed a 10 s run before. A real limit
+                // fails again; the long validation catches the rest.
+                if aborted() {
+                    break;
+                }
+                println!("  step {i} failed once ({}): {e}; re-checking", st.label);
+                rep = stream(&opts(st, Mode::Sine, screen, in_ch, 0.0))?;
+                retried = true;
+            }
             match verdict(&rep, in_ch) {
                 Ok(()) => {
-                    println!("  step {i} pass  ({}; wake gap max {:.2} ms{})", st.label, rep.max_gap_ms,
+                    println!("  step {i} pass{} ({}; wake gap max {:.2} ms{})", if retried { " on re-check" } else { "" },
+                        st.label, rep.max_gap_ms,
                         if st.write_lead > 0 { format!(", write margin min {:.2} ms", rep.write_margin_min) } else { String::new() });
                     res.best_screen = Some(i);
                 }

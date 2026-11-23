@@ -62,8 +62,14 @@ LADDER=(
 BUFS48=(64 32 16 8)
 
 COUNTERS='inputMissing|outputLate|resyncs|inErrors|outErrors|gapFrames|races'
-counters() {   # sum of all error counters in the plug-in statistics
-    $HAL -q 2>&1 | awk -v re="^ *($COUNTERS) " '$0 ~ re {s += $2} END {print s+0}'
+# stats_of <ur_hal_test output>: "<inputFrames> <errors>", errors = the plug-in error counters plus
+# the sample time breaks the client saw (only in the output of a streaming run).
+stats_of() {
+    print -r -- "$1" | awk -v re="^ *($COUNTERS) " '
+        /^ *inputFrames / {f = $2}
+        /sample time breaks in\/out:/ {split($NF, b, "/"); s += b[1] + b[2]}
+        $0 ~ re {s += $2}
+        END {printf "%d %d\n", f, s}'
 }
 current_config() {   # the 8 numbers of the active configuration, comma separated
     $HAL -q 2>&1 | awk '
@@ -80,12 +86,13 @@ load_on()  { (( LOAD )) || return; for i in $(seq 1 $(sysctl -n hw.ncpu)); do ye
 load_off() { (( ${#LOADPIDS[@]} )) && kill $LOADPIDS 2>/dev/null; LOADPIDS=(); }
 
 ORIG_CFG=$(current_config)
+$CTL version >/dev/null 2>&1   # wake the control link (on Windows the first message on a fresh link got lost)
 ORIG_LB=$(loopback_get)
 [[ -n $ORIG_LB ]] || { echo "ur44ctl cannot read PatchLoopbackMode (UR44 in Yamaha mode? mixer app quit?)"; exit 1; }
 FINAL_CFG=$ORIG_CFG
 restore() {
     load_off
-    $HAL -c "$FINAL_CFG" >/dev/null 2>&1 && echo "plug-in configuration: $FINAL_CFG"
+    $HAL -q -c "$FINAL_CFG" >/dev/null 2>&1 && echo "plug-in configuration: $FINAL_CFG"
     $CTL set PatchLoopbackMode 0 $ORIG_LB >/dev/null 2>&1 && echo "LOOPBACK restored to $ORIG_LB" \
         || echo "WARNING: could not restore LOOPBACK; run: ur44ctl set PatchLoopbackMode 0 $ORIG_LB"
 }
@@ -96,17 +103,21 @@ echo "original configuration $ORIG_CFG, LOOPBACK $ORIG_LB"
 $CTL set PatchLoopbackMode 0 1 >/dev/null || { echo "could not switch LOOPBACK on"; exit 1; }
 echo "LOOPBACK on"
 
-# run <cfg> <rate> <buf> <secs> -> 0 if the error counters did not move
+# run <cfg> <rate> <buf> <secs> -> 0 if the run was clean; $LAST describes it.
+# -q with -c: apply the configuration only (without -q, ur_hal_test would also record for 5 s).
 run() {
-    $HAL -c "$1" >/dev/null 2>&1 || return 1
-    local before=$(counters)
+    LAST="configuration $1 not applied"
+    $HAL -q -c "$1" >/dev/null 2>&1 || return 1
+    local b=(${=$(stats_of "$($HAL -q 2>&1)")})
     load_on
-    $HAL -r $2 -b $3 -s $4 >/dev/null 2>&1; local rc=$?
+    local out; out=$($HAL -r $2 -b $3 -s $4 -o /dev/null 2>&1); local rc=$?
     load_off
-    local after=$(counters)
-    # The counters may be cumulative or reset when the engine restarts: use the growth if they
-    # grew, else the fresh value.
-    local errs=$(( after >= before ? after - before : after ))
+    local a=(${=$(stats_of "$out")})
+    # The engine resets its counters when it starts (ur_engine_start). If it kept running for another
+    # client, they are cumulative: then inputFrames grew by about the whole run.
+    local errs=${a[2]}
+    (( a[1] >= b[1] + $4 * $2 / 2 )) && errs=$(( a[2] - b[2] ))
+    LAST="exit $rc, $errs error(s)/break(s)"
     (( rc == 0 && errs == 0 ))
 }
 scale() { echo $(( $1 * $2 / 48000 < 1 ? 1 : $1 * $2 / 48000 )); }
@@ -121,7 +132,7 @@ for rate in $RATES; do
         if LOAD=0 run ${LADDER[i]} $rate $buf $SCREEN; then
             echo "  timing step $((i-1)) pass  (${LADDER[i]})"; best=$i
         else
-            echo "  timing step $((i-1)) FAIL (${LADDER[i]})"; break
+            echo "  timing step $((i-1)) FAIL (${LADDER[i]}): $LAST"; break
         fi
     done
     (( best > 0 )) || { echo "  not stable even with the safe timing"; continue; }
@@ -130,7 +141,7 @@ for rate in $RATES; do
     bbest=0
     for b48 in $BUFS48; do
         b=$(scale $b48 $rate)
-        if LOAD=0 run ${LADDER[pick]} $rate $b $SCREEN; then echo "  buffer $b pass"; bbest=$b48; else echo "  buffer $b FAIL"; break; fi
+        if LOAD=0 run ${LADDER[pick]} $rate $b $SCREEN; then echo "  buffer $b pass"; bbest=$b48; else echo "  buffer $b FAIL: $LAST"; break; fi
     done
     (( bbest > 0 )) || { echo "  no buffer size passed"; continue; }
     # one buffer step of headroom too, then validate, backing off on failure
@@ -140,7 +151,7 @@ for rate in $RATES; do
         b=$(scale $bpick $rate)
         echo "  validating timing step $((pick-1)), buffer $b for $VALIDATE s$( (( LOAD )) && echo ' under load') ..."
         if run ${LADDER[pick]} $rate $b $VALIDATE; then break; fi
-        echo "  validation FAILED, backing off"; pick=$(( pick - 1 ))
+        echo "  validation FAILED ($LAST), backing off"; pick=$(( pick - 1 ))
     done
     (( pick >= 1 )) || { echo "  nothing passed validation"; continue; }
     line=$($RT UR44 $rate $b 4 2>&1 | grep 'APP ROUND TRIP')
