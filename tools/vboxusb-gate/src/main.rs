@@ -178,7 +178,7 @@ fn open_and_prepare(verbose: bool, quiet: bool) -> Result<Dev> {
         }
         // one transaction per microframe, whole frames, room for nominal + 1 frames
         let mps = (e.mps & 0x7ff) as usize;
-        if e.mps >> 11 != 0 || e.interval != 1 || e.attr & 3 != 1 || mps % FB != 0 || mps / FB <= nominal() as usize {
+        if e.mps >> 11 != 0 || e.interval != 1 || e.attr & 3 != 1 || !mps.is_multiple_of(FB) || mps / FB <= nominal() as usize {
             bail!("endpoint {ep:#04x}: unexpected format for {} Hz", rate());
         }
         sizes.push(mps);
@@ -328,8 +328,8 @@ impl Pipe {
         if err != 0 {
             bail!("{} URB #{seq}: error {err} ({})", self.name, status_name(err));
         }
-        for k in 0..PKTS {
-            let p = u.pkts[k];
+        let pkts = { u.pkts }; // copy out of the packed struct
+        for (k, p) in pkts.iter().enumerate() {
             let st = { p.status };
             if st != 0 {
                 bail!("{} URB #{seq} packet {k}: status {st} ({})", self.name, status_name(st));
@@ -485,7 +485,7 @@ fn stream(o: &Opts) -> Result<Report> {
                 for k in 0..PKTS {
                     let p = u.pkts[k];
                     let cb = p.len as usize;
-                    if cb % FB != 0 || cb > mbpi() {
+                    if !cb.is_multiple_of(FB) || cb > mbpi() {
                         bail!("IN URB #{j} packet {k}: length {cb} not a whole number of frames");
                     }
                     let n = cb / FB;
@@ -538,8 +538,8 @@ fn stream(o: &Opts) -> Result<Report> {
                         break;
                     }
                 }
-                for k in 0..PKTS {
-                    fifo.push_back(if counts[k] == 0 { nominal() } else { counts[k] });
+                for &c in &counts {
+                    fifo.push_back(if c == 0 { nominal() } else { c });
                 }
                 stable = if all_nonempty { stable + 1 } else { 0 };
                 pin.free.push(i);
@@ -651,7 +651,7 @@ fn stream(o: &Opts) -> Result<Report> {
     let mut deltas: Vec<f64> = pout
         .done_qpc
         .iter()
-        .zip(pin.done_qpc.iter().skip(0))
+        .zip(pin.done_qpc.iter())
         .map(|(o_, i_)| ms(*i_, *o_))
         .collect();
     let delta = sig::median(&mut deltas).map(|v| v.round());
@@ -761,7 +761,7 @@ fn submit_out(
 fn fill_out(p: &mut Pipe, i: usize, o: &Opts, sine: &sig::Sine, in_done: u64, clicks: &mut VecDeque<Click>) {
     let x = &mut p.xs[i];
     let seq = x.seq;
-    let click_here = o.mode == Mode::Click && seq >= 200 && seq % 250 == 0;
+    let click_here = o.mode == Mode::Click && seq >= 200 && seq.is_multiple_of(250);
     let mut off = 0;
     let mut pos = x.first_frame;
     for k in 0..PKTS {

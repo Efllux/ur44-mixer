@@ -8,6 +8,9 @@ log is in `tools/winusb-gate/results/gate-log.txt`. This file starts with the cr
 **Verdict (section 8): GO with caveats for playback through VBoxUSB.sys** (Microsoft-catalog-signed,
 installed by usbipd-win): 5 min of clean duplex at 48 kHz, no drift, 4.9 ms app round trip at a
 4 ms queue.
+**Update (section 9):** with late write and per-PC calibration, validated for 300 s through the
+digital loopback: **1.78 ms at 48 kHz, 1.38 ms at 96 kHz, 1.57 ms at 192 kHz** (macOS: 1.55–1.71
+ms). Tool and usage: [`tools/vboxusb-gate/README.md`](../tools/vboxusb-gate/README.md).
 
 ## Crashes on 2026-11-21/22 (dump analysis)
 

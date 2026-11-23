@@ -33,7 +33,7 @@ struct Deframer {
 
 impl Deframer {
     fn feed(&mut self, data: &[u8], out: &mut Vec<Vec<u8>>) {
-        for p in data.chunks_exact(4) {
+        for p in data.as_chunks::<4>().0 {
             let (n, end) = match p[0] & 0x0F {
                 0x4 => (3, false),
                 0x5 => (1, true),

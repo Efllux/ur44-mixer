@@ -133,7 +133,7 @@ pub fn list_paths() -> Result<Vec<String>> {
             if need == 0 {
                 continue;
             }
-            let mut buf = vec![0u64; (need as usize + 7) / 8];
+            let mut buf = vec![0u64; (need as usize).div_ceil(8)];
             let det = buf.as_mut_ptr() as *mut SP_DEVICE_INTERFACE_DETAIL_DATA_W;
             (*det).cbSize = size_of::<SP_DEVICE_INTERFACE_DETAIL_DATA_W>() as u32;
             if SetupDiGetDeviceInterfaceDetailW(set, &ifd, det, need, null_mut(), null_mut()) != 0 {
