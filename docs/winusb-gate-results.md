@@ -481,17 +481,20 @@ loopback, so the converters are not included):
 | Rate | Chosen setting | Round trip median / max | USB wire (DSP loopback) | Notes |
 |---|---|---|---|---|
 | 48 kHz | 4 ms queue, lead 1 + 200 µs | **1.78 / 1.79 ms** | 0.604 ms | screening passed up to +600 µs; +400 µs failed its 5-min validation (2 dropouts), so it backed off |
-| 96 kHz | 4 ms queue, lead 1 + 400 µs | **1.38 / 1.39 ms** | 0.552 ms | all steps passed screening; validated one step below the top |
-| 192 kHz | 8 ms queue, write at submit | 7.86 / 8.01 ms | 0.526 ms | late write (lead 2) dropped out in screening |
+| 96 kHz | 4 ms queue, lead 1 + 600 µs | **1.38 / 1.39 ms** | 0.552 ms | all steps passed screening; validated one step below the top |
+| 192 kHz | 4 ms queue, lead 1 + 400 µs | **1.57 / 1.60 ms** | 0.526 ms | re-run 2026-11-23 with re-checks (below); +600 µs failed its 5-min validation (2 dropouts), so it backed off |
 
 - On the same digital-loopback method, macOS reaches 1.55–1.71 ms (section 7 reference). This PC
-  is at **1.38 ms at 96 kHz and 1.78 ms at 48 kHz**, in software only, with no driver of our own.
-- 192 kHz: the lead-2 step failed screening with 3 dropouts. The ladder stops at the first
-  failure, so lead 1 was not tried, although a 10 s click run at 192 kHz / lead 1 had passed over
-  the cable earlier. Late write at 192 kHz moves 450-byte packets, and the fetch point may differ.
-  This needs its own look before it is trusted. Since then, the calibration re-checks a failed
-  step once and stops only at a step that fails twice; that build has not run on hardware yet
-  (the UR44 was disconnected), so the 192 kHz row above is from the old walk.
+  is at **1.38 ms at 96 kHz, 1.57 ms at 192 kHz and 1.78 ms at 48 kHz**, in software only, with
+  no driver of our own.
+- 192 kHz, first run: the lead-2 step failed screening with 3 dropouts, and the old walk stopped
+  at the first failure, so it settled on the 8 ms queue (7.86 / 8.01 ms). The calibration now
+  re-checks a failed step once and stops only at a step that fails twice. In the re-run, steps 3,
+  5 and 7 each failed once and passed on re-check. The first step-3 failure was a wake gap that let
+  the OUT queue fall to 1 ms, not a late-write fault. The 300 s validation of step 6 failed, and
+  step 5 then passed. So 192 kHz on this PC has sporadic one-off hiccups at every lead, not a sharp
+  limit. The validated setting is less proven than the 48/96 kHz ones; a longer `--validate-secs`
+  or `--load` run would add confidence.
 - The macOS counterpart is `driver/tools/calibrate.sh`. It switches LOOPBACK with `ur44ctl`,
   sweeps the plug-in timing (`ur_hal_test -q -c`: margins, guard, scan period) and the client
   buffer, judges each step by the plug-in's error counters plus the client's sample time breaks,

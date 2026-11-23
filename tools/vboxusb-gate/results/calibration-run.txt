@@ -47,3 +47,36 @@ LOOPBACK restored to 0
   96000  late write ~0.4 ms ahead                     1.38ms     1.39ms      1 st
  192000  8 ms queue, write at submit                  7.86ms     8.01ms      1 st
 saved results/calibration-this-pc.json
+
+=== 2026-11-23 re-run, 192 kHz only, with re-checks
+calibration: rates [192000], screen 20 s/step, validate 300 s, margin 1 step(s); worst case ~9 min. Ctrl+C stops cleanly.
+UR44 firmware: BOOT V2.12 MAIN V2.12
+LOOPBACK on (was 0)
+capture peaks (dBFS): [-6.0, -6.0, -69.0, -67.0, -68.0, -69.0]
+loopback returns on capture channel 1 at -5.7 dBFS
+
+=== 192000 Hz
+  step 0 pass (8 ms queue, write at submit; wake gap max 1.22 ms)
+  step 1 pass (4 ms queue, write at submit; wake gap max 1.07 ms)
+  step 2 pass (4 ms queue, late write ~2 ms ahead; wake gap max 1.19 ms, write margin min 2.65 ms)
+  step 3 failed once (4 ms queue, late write ~1 ms ahead): safety: OUT queue fell to 1 ms (< 3); re-checking
+  step 3 pass on re-check (4 ms queue, late write ~1 ms ahead; wake gap max 1.17 ms, write margin min 1.42 ms)
+  step 4 pass (late write ~0.8 ms ahead; wake gap max 1.23 ms, write margin min 1.50 ms)
+  step 5 failed once (late write ~0.6 ms ahead): 1 dropout(s)/slip(s), worst error 51 % of the tone; re-checking
+  step 5 pass on re-check (late write ~0.6 ms ahead; wake gap max 1.07 ms, write margin min 1.45 ms)
+  step 6 pass (late write ~0.4 ms ahead; wake gap max 1.08 ms, write margin min 1.26 ms)
+  step 7 failed once (late write ~0.2 ms ahead): 9 dropout(s)/slip(s), worst error 72 % of the tone; re-checking
+  step 7 pass on re-check (late write ~0.2 ms ahead; wake gap max 1.07 ms, write margin min 1.05 ms)
+  validating step 6 (late write ~0.4 ms ahead) for 300 s ...
+  validation FAILED: 2 dropout(s)/slip(s), worst error 98 % of the tone; backing off one step
+  validating step 5 (late write ~0.6 ms ahead) for 300 s ...
+  validated (wake gap max 1.21 ms, clock -49.9 ppm)
+  round trip 1.57 ms median / 1.60 ms max (USB wire 0.526 ms)
+LOOPBACK restored to 0
+
+=== calibration result (complete)
+   rate  setting                                   RT median     RT max  headroom
+ 192000  late write ~0.6 ms ahead                     1.57ms     1.60ms      2 st
+exit=0
+events since 2026-11-23T15:45:03: 0 error/warning (DCOM/DNS/Time ignored), 0 crash markers (41/1001/6008)
+
